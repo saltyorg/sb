@@ -80,14 +80,18 @@ if [[ $release =~ (focal|jammy)$ ]]; then
 elif [[ $release =~ (placeholder)$ ]]; then
     echo "$release is currently in testing."
 else
+    echo "==== UNSUPPORTED OS ===="
     if $SUPPORT; then
         echo "$release is not supported."
+        echo "Please see the wiki for supported OS'"
         exit 1
     else
+        echo "Forcing install on $release."
         echo "You have chosen to ignore support."
         echo "Do not ask for support on our discord."
         sleep 10
     fi
+    echo "==== UNSUPPORTED OS ===="
 fi
 
 # Check if using valid arch
