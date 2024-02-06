@@ -1,6 +1,9 @@
 name: Build sb binary
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - 'sb.py'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -31,8 +34,8 @@ jobs:
       - name: Copy binary and purge build directory
         run: cp ./build/sb sb && rm -rf ./build
 
-      - name: List Directory Contents
-        run: ls -la
+      - name: chmod sb
+        run: chmod +x sb
 
       - name: Commit changes
         uses: EndBug/add-and-commit@v9
