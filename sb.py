@@ -249,13 +249,17 @@ def run_ansible_playbook(repo_path, playbook_path, ansible_binary_path, tags=Non
 
     print(f"Executing Ansible playbook with command: {' '.join(shlex.quote(arg) for arg in command)}")
 
-    result = subprocess.run(command, cwd=repo_path)
+    try:
+        result = subprocess.run(command, cwd=repo_path)
+    except KeyboardInterrupt:
+        print(f"\nError: Playbook {playbook_path} run was aborted by the user.\n")
+        sys.exit(1)
 
     if result.returncode != 0:
-        print("\nError: Playbook run failed.")
+        print(f"\nError: Playbook {playbook_path} run failed, scroll up to the failed task to review.\n")
         sys.exit(result.returncode)
 
-    print(f"\nPlaybook {playbook_path} executed successfully.")
+    print(f"\nPlaybook {playbook_path} executed successfully.\n")
 
 
 def git_fetch_and_reset(repo_path, default_branch='master', post_fetch_script=None, custom_commands=None):
