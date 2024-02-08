@@ -681,12 +681,14 @@ parser_branch = subparsers.add_parser('branch', help='Change the branch of the S
 parser_branch.add_argument('branch_name', type=str,
                            help='The name of the branch to switch to in the Saltbox repository.')
 parser_branch.set_defaults(func=handle_branch)
+add_verbosity_argument(parser_branch)
 
 # Create a parser for the "sandbox-branch" command
 parser_sandbox_branch = subparsers.add_parser('sandbox-branch', help='Change the branch of the Sandbox repository.')
 parser_sandbox_branch.add_argument('branch_name', type=str,
                                    help='The name of the branch to switch to in the Sandbox repository.')
 parser_sandbox_branch.set_defaults(func=handle_sandbox_branch)
+add_verbosity_argument(parser_sandbox_branch)
 
 args = parser.parse_args()
 # Call the appropriate handler function
