@@ -189,7 +189,7 @@ run_cmd $PYTHON3_CMD \
     ruamel.yaml tld argon2_cffi \
     ndg-httpsclient dnspython lxml \
     jmespath passlib PyMySQL \
-    ansible$ANSIBLE \
+    ansible$ANSIBLE ansible-lint \
     || error "Failed to install pip3 dependencies with $PYTHON3_CMD"
 
 run_cmd cp /srv/ansible/venv/bin/ansible* /usr/local/bin/ \
