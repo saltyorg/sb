@@ -23,10 +23,10 @@ jobs:
         run: cd build && python3.10 -m venv venv
 
       - name: Install Dependencies
-        run: cd build && ./venv/bin/pip install PyYAML nuitka
+        run: ./build/venv/bin/pip install -r requirements.txt
 
       - name: List Pip modules
-        run: cd build && ./venv/bin/pip list
+        run: ./build/venv/bin/pip list
 
       - name: Compile binary
         run: cd build && ./venv/bin/python -m nuitka ../sb.py --onefile -o sb
