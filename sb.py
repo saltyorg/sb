@@ -338,6 +338,7 @@ def update_saltbox(saltbox_repo_path, saltbox_playbook_file, verbosity=0):
     new_commit_hash = get_git_commit_hash(saltbox_repo_path)
 
     if old_commit_hash != new_commit_hash:
+        print("Saltbox Commit Hash changed, updating tags cache.")
         asyncio.run(run_and_cache_ansible_tags(saltbox_repo_path, saltbox_playbook_file, ""))
 
     print("Saltbox Update Completed.")
@@ -370,6 +371,7 @@ def update_sandbox(sandbox_repo_path, sandbox_playbook_file, verbosity=0):
     new_commit_hash = get_git_commit_hash(sandbox_repo_path)
 
     if old_commit_hash != new_commit_hash:
+        print("Sandbox Commit Hash changed, updating tags cache.")
         asyncio.run(run_and_cache_ansible_tags(sandbox_repo_path, sandbox_playbook_file, ""))
 
     print("Sandbox Update Completed.")
