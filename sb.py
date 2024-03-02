@@ -118,8 +118,16 @@ def print_in_columns(tags, padding=2):
 
 def get_git_commit_hash(repo_path):
     """Get the current Git commit hash of the repository."""
-    completed_process = subprocess.run(["git", "rev-parse", "HEAD"], cwd=repo_path, stdout=subprocess.PIPE, text=True)
-    return completed_process.stdout.strip()
+    try:
+        completed_process = subprocess.run(["git", "rev-parse", "HEAD"], cwd=repo_path, stdout=subprocess.PIPE, text=True)
+    except FileNotFoundError:
+        print(f"\nThe folder '{repo_path}' does not exist. This indicates an incomplete install.\n")
+        sys.exit(1)
+    else:
+        if completed_process.returncode != 0:
+            print(f"Error occurred while trying to get the git commit hash: {completed_process.stderr}")
+            sys.exit(completed_process.returncode)
+        return completed_process.stdout.strip()
 
 
 async def run_and_cache_ansible_tags(repo_path, playbook_path, extra_skip_tags):
