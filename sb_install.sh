@@ -82,12 +82,12 @@ for directory in /home/*/*/ ; do
 done
 
 # Check for supported Ubuntu Releases
-release=$(lsb_release -cs)
+release=$(lsb_release -cs 2>/dev/null | grep -v "No LSB modules are available.")
 
 # Add more releases like (focal|jammy)$
 if [[ $release =~ (focal|jammy)$ ]]; then
     echo "$release is currently supported."
-elif [[ $release =~ (placeholder)$ ]]; then
+elif [[ $release =~ (noble)$ ]]; then
     echo "$release is currently in testing."
 else
     echo "==== UNSUPPORTED OS ===="
