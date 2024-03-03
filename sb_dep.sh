@@ -169,6 +169,23 @@ elif [[ $release =~ (jammy)$ ]]; then
     echo "Jammy, deploying venv with Python3."
     run_cmd python3 -m venv venv || error "Failed to create venv using Python 3."
 
+elif [[ $release =~ (noble)$ ]]; then
+    echo "Noble, deploying venv with Python3.10."
+    run_cmd add-apt-repository ppa:deadsnakes/ppa --yes \
+        || error "Failed to add deadsnakes repository"
+    run_cmd apt install python3.10 python3.10-dev python3.10-distutils python3.10-venv -y \
+        || error "Failed to install Python 3.10"
+    run_cmd add-apt-repository ppa:deadsnakes/ppa -r --yes \
+        || error "Failed to remove deadsnakes repository"
+    run_cmd rm -rf /etc/apt/sources.list.d/deadsnakes-ubuntu-ppa-focal.list \
+        || error "Failed to remove repository list file"
+    run_cmd rm -rf /etc/apt/sources.list.d/deadsnakes-ubuntu-ppa-focal.list.save \
+        || error "Failed to remove repository list save file"
+    run_cmd python3.10 -m ensurepip \
+        || error "Failed to ensure pip for Python 3.10"
+    run_cmd python3.10 -m venv venv \
+        || error "Failed to create venv using Python 3.10"
+
 else
     error "Unsupported Distro, exiting."
 fi
