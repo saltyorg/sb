@@ -117,6 +117,7 @@ run_cmd apt-get install -y \
     python3-apt \
     python3-virtualenv \
     python3-venv \
+    python3-pip \
     || error "Failed to install apt dependencies"
 
 # Generate en_US.UTF-8 locale if it doesn't already exist
@@ -177,12 +178,6 @@ else
     error "Unsupported Distro, exiting."
 fi
 
-## Install pip3
-cd /tmp || error "Failed to change directory to /tmp"
-run_cmd curl -sLO https://bootstrap.pypa.io/get-pip.py \
-    || error "Failed to download get-pip.py"
-run_cmd python3 get-pip.py || error "Failed to install pip3."
-
 ## Install pip3 Dependencies
 run_cmd $PYTHON3_CMD \
     pip setuptools wheel \
@@ -198,10 +193,3 @@ run_cmd $PYTHON3_CMD \
 
 run_cmd cp /srv/ansible/venv/bin/ansible* /usr/local/bin/ \
     || error "Failed to copy ansible binaries to /usr/local/bin"
-
-## Copy /usr/local/bin/pip to /usr/bin/pip
-if [ -f /usr/local/bin/pip3 ]; then
-    run_cmd cp /usr/local/bin/pip3 /usr/bin/pip3 || error "Failed to copy pip3 to /usr/bin"
-else
-    error "/usr/local/bin/pip3 not found"
-fi
