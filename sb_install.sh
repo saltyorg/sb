@@ -118,6 +118,19 @@ if systemd-detect-virt -c | grep -qi 'lxc'; then
     exit 1
 fi
 
+# Define required CPU features for x86-64-v2
+required_features=("sse4_2" "popcnt")
+
+# Check for x86-64-v2 support
+for feature in "${required_features[@]}"; do
+  if ! grep -q " $feature " /proc/cpuinfo; then
+    echo "==== UNSUPPORTED CPU Microarchitecture ===="
+    echo "Error: CPU does not support minimum microarchitecture level: x86-64-v2"
+    echo "==== UNSUPPORTED CPU Microarchitecture ===="
+    exit 1
+  fi
+done
+
 echo "Installing Saltbox Dependencies."
 
 $VERBOSE && echo "Script Path: $SCRIPT_PATH"
