@@ -192,7 +192,7 @@ fi
 
 ## Install pip3 Dependencies
 run_cmd $PYTHON3_CMD \
-    setuptools wheel \
+    pip setuptools wheel \
     || error "Failed to install pip setuptools and wheel with $PYTHON3_CMD"
 run_cmd $PYTHON3_CMD \
     pyOpenSSL requests netaddr \
