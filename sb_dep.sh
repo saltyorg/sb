@@ -68,6 +68,13 @@ run_cmd() {
     fi
 }
 
+install_pip() {
+  cd /tmp || error "Failed to change directory to /tmp"
+  run_cmd curl -sLO https://bootstrap.pypa.io/get-pip.py \
+      || error "Failed to download get-pip.py"
+  run_cmd python3 get-pip.py || error "Failed to install pip3."
+}
+
 ################################
 # Main
 ################################
@@ -117,7 +124,6 @@ run_cmd apt-get install -y \
     python3-apt \
     python3-virtualenv \
     python3-venv \
-    python3-pip \
     || error "Failed to install apt dependencies"
 
 # Generate en_US.UTF-8 locale if it doesn't already exist
@@ -151,8 +157,7 @@ release=$(lsb_release -cs) || error "Failed to determine Ubuntu release"
 
 if [[ $release =~ (focal)$ ]]; then
     echo "Focal, deploying venv with Python3.10."
-    run_cmd python3 -m pip install pip --upgrade \
-        || error "Failed updating system pip"
+    install_pip
     run_cmd add-apt-repository ppa:deadsnakes/ppa --yes \
         || error "Failed to add deadsnakes repository"
     run_cmd apt install python3.10 python3.10-dev python3.10-distutils python3.10-venv -y \
@@ -170,12 +175,13 @@ if [[ $release =~ (focal)$ ]]; then
 
 elif [[ $release =~ (jammy)$ ]]; then
     echo "Jammy, deploying venv with Python3."
-    run_cmd python3 -m pip install pip --upgrade \
-        || error "Failed updating system pip"
+    install_pip
     run_cmd python3 -m venv venv || error "Failed to create venv using Python 3."
 
 elif [[ $release =~ (noble)$ ]]; then
     echo "Noble, deploying venv with Python3."
+    # Cannot use pypa install method with Noble due to PEP 668
+    run_cmd apt-get install -y python3-pip
     run_cmd python3 -m venv venv || error "Failed to create venv using Python 3."
 
 else
