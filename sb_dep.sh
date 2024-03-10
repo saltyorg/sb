@@ -157,7 +157,6 @@ release=$(lsb_release -cs) || error "Failed to determine Ubuntu release"
 
 if [[ $release =~ (focal)$ ]]; then
     echo "Focal, deploying venv with Python3.10."
-    install_pip
     run_cmd add-apt-repository ppa:deadsnakes/ppa --yes \
         || error "Failed to add deadsnakes repository"
     run_cmd apt install python3.10 python3.10-dev python3.10-distutils python3.10-venv -y \
@@ -175,7 +174,6 @@ if [[ $release =~ (focal)$ ]]; then
 
 elif [[ $release =~ (jammy)$ ]]; then
     echo "Jammy, deploying venv with Python3."
-    install_pip
     run_cmd python3 -m venv venv || error "Failed to create venv using Python 3."
 
 elif [[ $release =~ (noble)$ ]]; then
@@ -188,9 +186,13 @@ else
     error "Unsupported Distro, exiting."
 fi
 
+if [[ $release =~ (focal|jammy)$ ]]; then
+    install_pip
+fi
+
 ## Install pip3 Dependencies
 run_cmd $PYTHON3_CMD \
-    pip setuptools wheel \
+    setuptools wheel \
     || error "Failed to install pip setuptools and wheel with $PYTHON3_CMD"
 run_cmd $PYTHON3_CMD \
     pyOpenSSL requests netaddr \
