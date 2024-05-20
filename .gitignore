@@ -1,0 +1,5 @@
+# Logs
+/*.log
+/.idea
+/cache.json
+/sb

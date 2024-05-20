@@ -1,0 +1,55 @@
+name: Build sb binary
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'sb.py'
+      - 'requirements.txt'
+    tags:
+      - '*'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: self-hosted
+    steps:
+      - name: Check-out repository
+        uses: actions/checkout@v4
+
+      - name: Setup venv
+        run: python3.10 -m venv venv
+
+      - name: Install Dependencies
+        run: ./venv/bin/pip install -r requirements.txt
+
+      - name: List Pip modules
+        run: ./venv/bin/pip list
+
+      - name: Prepare script with version
+        run: |
+          echo "Building with version ${GITHUB_REF#refs/tags/}"
+          sed "s/__version__ = \"0.0.0\"/__version__ = \"${GITHUB_REF#refs/tags/}\"/" sb.py > sb_with_version.py
+
+      - name: Compile binary
+        run: ./venv/bin/python -m nuitka sb_with_version.py --onefile -o sb && chmod +x sb
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            sb
+
+      - name: Run release workflow 
+        if: startsWith(github.ref, 'refs/tags/')
+        run: gh workflow run release.yml -f release_tag=${{ github.ref }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - uses: sarisia/actions-status-discord@v1
+        if: always()
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}

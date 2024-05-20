@@ -1,0 +1,26 @@
+name: Update Release File
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        required: true
+
+jobs:
+  update-release-file:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Write tag to release.txt
+        run: echo "${{ inputs.release_tag }}" > release.txt
+
+      - name: Commit changes
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: Continuous Integration
+          author_email: username@users.noreply.github.com
+          message: 'Update release.txt with the latest tag'
+          add: 'release.txt'
