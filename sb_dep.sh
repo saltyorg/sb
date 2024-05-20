@@ -148,6 +148,7 @@ run_cmd apt-get install -y \
     git \
     curl \
     jq \
+    file \
     gpg-agent \
     build-essential \
     libssl-dev \

@@ -46,6 +46,11 @@ run_cmd() {
 }
 
 download_binary() {
+    if ! command -v file > /dev/null 2>&1; then
+        run_cmd sudo apt-get update
+        run_cmd sudo apt-get install -y file
+    fi
+
     if [ ! -f "${RELEASE_FILE}" ]; then
         echo "Error: ${RELEASE_FILE} does not exist." >&2
         exit 1
