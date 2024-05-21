@@ -42,9 +42,16 @@ jobs:
         if: github.event_name != 'pull_request'
         run: ./venv/bin/python -m nuitka sb_with_version.py --onefile -o sb && chmod +x sb
 
-      - name: Compile binary
+      - name: Compile binary (PR)
         if: github.event_name == 'pull_request'
         run: ./venv/bin/python -m nuitka sb.py --onefile -o sb && chmod +x sb
+
+      - name: Upload artifact (PR)
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: sb
+          path: sb
 
       - name: Release
         uses: softprops/action-gh-release@v2
