@@ -7,6 +7,10 @@ on:
       - 'requirements/requirements.txt'
     tags:
       - '*'
+  pull_request:
+    paths:
+    - 'sb.py'
+    - 'requirements/requirements.txt'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
