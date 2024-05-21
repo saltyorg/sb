@@ -4,7 +4,7 @@ on:
   push:
     paths:
       - 'sb.py'
-      - 'requirements.txt'
+      - 'requirements/requirements.txt'
     tags:
       - '*'
 
@@ -23,7 +23,7 @@ jobs:
         run: python3.10 -m venv venv
 
       - name: Install Dependencies
-        run: ./venv/bin/pip install -r requirements.txt
+        run: ./venv/bin/pip install -r requirements/requirements.txt
 
       - name: List Pip modules
         run: ./venv/bin/pip list
