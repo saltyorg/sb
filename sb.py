@@ -694,6 +694,19 @@ def run_command(cmd, env=None, cwd=None):
         raise Exception(f"Failed running {' '.join(cmd)} with error: {result.stderr.decode('utf-8')}")
 
 
+def copy_files(src_pattern, dest_dir):
+    """
+    Copies files matching the src_pattern to the destination directory.
+
+    Parameters:
+    src_pattern (str): The source file pattern to match.
+    dest_dir (str): The destination directory where files should be copied.
+    """
+    files = glob.glob(src_pattern)
+    for file in files:
+        shutil.copy(file, dest_dir)
+
+
 def manage_ansible_venv(recreate=False):
     if os.path.isdir("/srv/ansible/venv/bin") and not os.path.isfile("/srv/ansible/venv/bin/python3.12"):
         print("Python 3.12 not detected in venv, forcing recreate.")
@@ -751,8 +764,7 @@ def manage_ansible_venv(recreate=False):
            "--upgrade", "--requirement", "/srv/git/sb/requirements-saltbox.txt"]
     run_command(cmd)
 
-    cmd = ["cp", "/srv/ansible/venv/bin/{ansible*,certbot,apprise}", "/usr/local/bin/"]
-    run_command(cmd)
+    copy_files("/srv/ansible/venv/bin/{ansible*,certbot,apprise}", "/usr/local/bin/")
 
     cmd = ["chown", "-R", f"{SALTBOX_USER}:{SALTBOX_USER}", ansible_venv_path]
     run_command(cmd)
