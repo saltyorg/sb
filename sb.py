@@ -751,6 +751,9 @@ def manage_ansible_venv(recreate=False):
            "--upgrade", "--requirement", "/srv/git/sb/requirements-saltbox.txt"]
     run_command(cmd)
 
+    cmd = ["cp", "/srv/ansible/venv/bin/{ansible*,certbot,apprise}", "/usr/local/bin/"]
+    run_command(cmd)
+
     cmd = ["chown", "-R", f"{SALTBOX_USER}:{SALTBOX_USER}", ansible_venv_path]
     run_command(cmd)
 
