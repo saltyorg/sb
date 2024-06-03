@@ -180,7 +180,7 @@ $VERBOSE && echo "Script Path: $SCRIPT_PATH"
 run_cmd apt-get update
 
 # Install git
-run_cmd apt-get install -y git
+run_cmd apt-get install -y git curl
 
 # Remove existing repo folder
 if [ -d "$SB_PATH" ]; then
