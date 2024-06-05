@@ -159,6 +159,14 @@ if systemd-detect-virt -c | grep -qi 'lxc'; then
     exit 1
 fi
 
+# Check if specific desktop packages are installed
+if dpkg -l ubuntu-desktop &>/dev/null || dpkg -l gnome-shell &>/dev/null || dpkg -l xorg &>/dev/null; then
+    echo "==== UNSUPPORTED DESKTOP INSTALL ===="
+    echo "Install cancelled: Only Ubuntu Server is supported."
+    echo "==== UNSUPPORTED DESKTOP INSTALL ===="
+    exit 1
+fi
+
 # Define required CPU features for x86-64-v2
 required_features=("sse4_2" "popcnt")
 
