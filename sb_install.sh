@@ -160,7 +160,7 @@ if systemd-detect-virt -c | grep -qi 'lxc'; then
 fi
 
 # Check if specific desktop packages are installed
-if dpkg -l ubuntu-desktop &>/dev/null || dpkg -l gnome-shell &>/dev/null || dpkg -l xorg &>/dev/null; then
+if dpkg -l ubuntu-desktop &>/dev/null; then
     echo "==== UNSUPPORTED DESKTOP INSTALL ===="
     echo "Install cancelled: Only Ubuntu Server is supported."
     echo "==== UNSUPPORTED DESKTOP INSTALL ===="
