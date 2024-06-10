@@ -9,8 +9,8 @@ on:
       - '*'
   pull_request:
     paths:
-    - '**.py'
-    - 'requirements/**'
+      - '**.py'
+      - 'requirements/**'
 
 jobs:
   build:
