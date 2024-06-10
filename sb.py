@@ -17,14 +17,45 @@ import requests
 
 saltbox_accounts_path = '/srv/git/saltbox/accounts.yml'
 
+
+def validate_structure(data):
+    required_keys = {
+        "apprise": [],
+        "cloudflare": ["api", "email"],
+        "dockerhub": ["token", "user"],
+        "plex": ["pass", "user"],
+        "user": ["domain", "email", "name", "pass", "ssh_key"]
+    }
+
+    for key, subkeys in required_keys.items():
+        if key not in data:
+            return False, f"Config file '{saltbox_accounts_path}' is missing required section: '{key}'"
+        for subkey in subkeys:
+            if subkey not in data[key]:
+                return False, f"Config file '{saltbox_accounts_path}' is missing required key '{subkey}' in section '{key}'"
+
+    return True, "Valid structure"
+
+
 try:
     with open(saltbox_accounts_path, 'r') as file:
         data = yaml.safe_load(file)
 except FileNotFoundError:
-    print(f"Error: The file '{saltbox_accounts_path}' was not found.")
+    print(f"Error: Config file '{saltbox_accounts_path}' was not found.")
     sys.exit(1)
 except yaml.YAMLError as e:
-    print(f"Error parsing the YAML file: {e}")
+    print(f"Error parsing config file '{saltbox_accounts_path}': {e}")
+    sys.exit(1)
+
+# Check if the file is empty
+if data is None:
+    print(f"Error: Config file '{saltbox_accounts_path}' is empty.")
+    sys.exit(1)
+
+# Validate the structure of the parsed YAML
+is_valid, message = validate_structure(data)
+if not is_valid:
+    print(f"Error: {message}")
     sys.exit(1)
 
 ################################
@@ -52,6 +83,7 @@ SALTBOXMOD_PLAYBOOK_PATH = f"{SALTBOXMOD_REPO_PATH}/saltbox_mod.yml"
 SB_REPO_PATH = "/srv/git/sb"
 
 __version__ = "0.0.0"
+
 
 ################################
 # Functions
