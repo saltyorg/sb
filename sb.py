@@ -804,10 +804,7 @@ def manage_ansible_venv(recreate=False):
            "--upgrade", "--requirement", "/srv/git/sb/requirements-saltbox.txt"]
     run_command(cmd)
 
-    copy_files(
-    ["/srv/ansible/venv/bin/ansible*", "/srv/ansible/venv/bin/certbot", "/srv/ansible/venv/bin/apprise"], 
-    "/usr/local/bin/"
-    )
+    copy_files(["/srv/ansible/venv/bin/ansible*", "/srv/ansible/venv/bin/certbot", "/srv/ansible/venv/bin/apprise"], "/usr/local/bin/")
 
     cmd = ["chown", "-R", f"{SALTBOX_USER}:{SALTBOX_USER}", ansible_venv_path]
     run_command(cmd)
@@ -897,6 +894,9 @@ add_verbosity_argument(parser_sandbox_branch)
 # Create a parser for the "version" command
 parser_handle_version = subparsers.add_parser('version', help='Reports the version of the binary')
 parser_handle_version.set_defaults(func=handle_version)
+
+# Add the --version argument to the main parser
+parser.add_argument('--version', action='store_true', help='Reports the version of the binary')
 
 args = parser.parse_args()
 # Call the appropriate handler function
