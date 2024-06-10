@@ -723,17 +723,28 @@ def run_command(cmd, env=None, cwd=None):
         raise Exception(f"Failed running {' '.join(cmd)} with error: {result.stderr.decode('utf-8')}")
 
 
-def copy_files(src_pattern, dest_dir):
+def copy_files(paths, dest_dir):
     """
-    Copies files matching the src_pattern to the destination directory.
-
+    Copies files from the given paths to the destination directory.
+    
     Parameters:
-    src_pattern (str): The source file pattern to match.
+    paths (list): A list of source file paths or glob patterns to match.
     dest_dir (str): The destination directory where files should be copied.
     """
-    files = glob.glob(src_pattern)
-    for file in files:
-        shutil.copy(file, dest_dir)
+    for path in paths:
+        # Check if the path contains any glob pattern characters
+        if any(char in path for char in "*?[]"):
+            # Handle as a glob pattern
+            files = glob.glob(path)
+        else:
+            # Handle as a direct path
+            files = [path]
+        
+        for file in files:
+            if os.path.isfile(file):
+                shutil.copy(file, dest_dir)
+            else:
+                print(f"Warning: {file} is not a file and will not be copied.")
 
 
 def manage_ansible_venv(recreate=False):
@@ -793,7 +804,10 @@ def manage_ansible_venv(recreate=False):
            "--upgrade", "--requirement", "/srv/git/sb/requirements-saltbox.txt"]
     run_command(cmd)
 
-    copy_files("/srv/ansible/venv/bin/{ansible*,certbot,apprise}", "/usr/local/bin/")
+    copy_files(
+    ["/srv/ansible/venv/bin/ansible*", "/srv/ansible/venv/bin/certbot", "/srv/ansible/venv/bin/apprise"], 
+    "/usr/local/bin/"
+    )
 
     cmd = ["chown", "-R", f"{SALTBOX_USER}:{SALTBOX_USER}", ansible_venv_path]
     run_command(cmd)
