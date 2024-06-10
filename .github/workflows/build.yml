@@ -38,7 +38,7 @@ jobs:
         run: ./venv/bin/python -m nuitka sb.py --onefile -o sb && chmod +x sb
 
       - name: Upload artifact
-        if: github.event_name == 'pull_request' || github.event_name == 'push'
+        if: startsWith(github.ref, 'refs/tags/') != true
         uses: actions/upload-artifact@v4
         with:
           name: sb
@@ -46,7 +46,7 @@ jobs:
 
       - name: Release
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') && github.event_name != 'pull_request'
         with:
           files: |
             sb
