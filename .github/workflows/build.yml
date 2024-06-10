@@ -3,13 +3,13 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - '**.py'
+      - '*.py'
       - 'requirements/**'
     tags:
       - '*'
   pull_request:
     paths:
-      - '**.py'
+      - '*.py'
       - 'requirements/**'
 
 jobs:
