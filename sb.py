@@ -20,11 +20,7 @@ saltbox_accounts_path = '/srv/git/saltbox/accounts.yml'
 
 def validate_structure(data):
     required_keys = {
-        "apprise": [],
-        "cloudflare": ["api", "email"],
-        "dockerhub": ["token", "user"],
-        "plex": ["pass", "user"],
-        "user": ["domain", "email", "name", "pass", "ssh_key"]
+        "user": ["domain", "email", "name", "pass"]
     }
 
     for key, subkeys in required_keys.items():
