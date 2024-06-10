@@ -282,25 +282,25 @@ def run_ansible_playbook(repo_path, playbook_path, ansible_binary_path, tags=Non
         # Combine all extra vars into a single dictionary
         combined_extra_vars = {}
         for var in extra_vars:
-            if "=" in var:
-                key, value = var.split("=", 1)
-                try:
-                    # Attempt to parse the value as JSON
-                    parsed_value = json.loads(value)
-                except json.JSONDecodeError:
-                    # If JSON parsing fails, treat it as a plain string
-                    parsed_value = value
-                combined_extra_vars[key] = parsed_value
-            else:
-                try:
-                    # Attempt to parse the entire var as JSON
-                    parsed_var = json.loads(var)
-                    if isinstance(parsed_var, dict):
-                        combined_extra_vars.update(parsed_var)
-                    else:
-                        raise ValueError("The provided JSON is not a dictionary.")
-                except (json.JSONDecodeError, ValueError) as e:
-                    print(f"Error: Failed to parse '{var}' as JSON: {e}")
+            try:
+                # Attempt to parse the entire var as JSON
+                parsed_var = json.loads(var)
+                if isinstance(parsed_var, dict):
+                    combined_extra_vars.update(parsed_var)
+                else:
+                    raise ValueError("The provided JSON is not a dictionary.")
+            except json.JSONDecodeError:
+                if "=" in var:
+                    key, value = var.split("=", 1)
+                    try:
+                        # Attempt to parse the value as JSON
+                        parsed_value = json.loads(value)
+                    except json.JSONDecodeError:
+                        # If JSON parsing fails, treat it as a plain string
+                        parsed_value = value
+                    combined_extra_vars[key] = parsed_value
+                else:
+                    print(f"Error: Failed to parse '{var}' as valid JSON or a key=value pair.")
                     sys.exit(1)  # Exit the script with an error status
         
         # Convert the dictionary to a JSON string and add it as a single --extra-vars argument
