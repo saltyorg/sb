@@ -36,14 +36,9 @@ jobs:
         if: github.event_name != 'pull_request'
         run: |
           echo "Building with version ${GITHUB_REF#refs/tags/}"
-          sed "s/__version__ = \"0.0.0\"/__version__ = \"${GITHUB_REF#refs/tags/}\"/" sb.py > sb_with_version.py
+          sed -i "s/__version__ = \"0.0.0\"/__version__ = \"${GITHUB_REF#refs/tags/}\"/" sb.py
 
       - name: Compile binary
-        if: github.event_name != 'pull_request'
-        run: ./venv/bin/python -m nuitka sb_with_version.py --onefile -o sb && chmod +x sb
-
-      - name: Compile binary (PR)
-        if: github.event_name == 'pull_request'
         run: ./venv/bin/python -m nuitka sb.py --onefile -o sb && chmod +x sb
 
       - name: Upload artifact (PR)
