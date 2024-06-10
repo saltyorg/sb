@@ -283,8 +283,25 @@ def run_ansible_playbook(repo_path, playbook_path, ansible_binary_path, tags=Non
         # Combine all extra vars into a single dictionary
         combined_extra_vars = {}
         for var in extra_vars:
-            key, value = var.split("=", 1)
-            combined_extra_vars[key] = value
+            if "=" in var:
+                key, value = var.split("=", 1)
+                try:
+                    # Attempt to parse the value as JSON to check if it's a dictionary
+                    parsed_value = json.loads(value)
+                    combined_extra_vars[key] = parsed_value
+                except json.JSONDecodeError:
+                    combined_extra_vars[key] = value
+            else:
+                try:
+                    # Attempt to parse the entire var as JSON to check if it's a dictionary
+                    parsed_var = json.loads(var)
+                    if isinstance(parsed_var, dict):
+                        combined_extra_vars.update(parsed_var)
+                    else:
+                        raise ValueError("The provided JSON is not a dictionary.")
+                except (json.JSONDecodeError, ValueError) as e:
+                    print(f"Warning: Failed to parse '{var}' as JSON: {e}")
+        
         # Convert the dictionary to a JSON string and add it as a single --extra-vars argument
         command += ["--extra-vars", json.dumps(combined_extra_vars)]
 
