@@ -815,7 +815,7 @@ def manage_ansible_venv(recreate=False):
         print("Done updating Ansible venv.")
 
 
-def handle_version(_arguments):
+def handle_version(args=None):
     print(f"Application Version: {__version__}")
 
 
