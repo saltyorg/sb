@@ -900,7 +900,9 @@ parser.add_argument('--version', action='store_true', help='Reports the version 
 
 args = parser.parse_args()
 # Call the appropriate handler function
-if 'func' in args:
+if args.version:
+    handle_version()
+elif 'func' in args:
     args.func(args)
 else:
     parser.print_help()
