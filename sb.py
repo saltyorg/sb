@@ -587,16 +587,29 @@ def handle_install(arguments):
         else:
             saltbox_tags.append(tag)  # No prefix to strip
 
+    # Parse extra_vars from JSON strings if necessary
+    extra_vars = arguments.extra_vars or []
+    parsed_extra_vars = []
+    for var in extra_vars:
+        try:
+            parsed_var = json.loads(var)
+            if isinstance(parsed_var, dict):
+                parsed_extra_vars.append(json.dumps(parsed_var))
+            else:
+                raise ValueError("Extra variable is not a dictionary.")
+        except (json.JSONDecodeError, ValueError):
+            parsed_extra_vars.append(var)
+
     # Call appropriate function for each type of role
     if saltbox_tags:
         run_ansible_playbook(SALTBOX_REPO_PATH, SALTBOX_PLAYBOOK_PATH, ANSIBLE_PLAYBOOK_BINARY_PATH, saltbox_tags,
-                             skip_tags, arguments.verbose, arguments.extra_vars)
+                             skip_tags, arguments.verbose, parsed_extra_vars)
     if mod_tags:
         run_ansible_playbook(SALTBOXMOD_REPO_PATH, SALTBOXMOD_PLAYBOOK_PATH, ANSIBLE_PLAYBOOK_BINARY_PATH, mod_tags,
-                             skip_tags, arguments.verbose, arguments.extra_vars)
+                             skip_tags, arguments.verbose, parsed_extra_vars)
     if sandbox_tags:
         run_ansible_playbook(SANDBOX_REPO_PATH, SANDBOX_PLAYBOOK_PATH, ANSIBLE_PLAYBOOK_BINARY_PATH, sandbox_tags,
-                             skip_tags, arguments.verbose, arguments.extra_vars)
+                             skip_tags, arguments.verbose, parsed_extra_vars)
 
 
 def handle_bench(_arguments):
