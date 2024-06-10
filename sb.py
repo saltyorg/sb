@@ -278,7 +278,6 @@ def run_ansible_playbook(repo_path, playbook_path, ansible_binary_path, tags=Non
     if verbosity > 0:
         command.append('-' + 'v' * verbosity)
 
-    # Properly handle extra_vars
     if extra_vars:
         # Combine all extra vars into a single dictionary
         combined_extra_vars = {}
@@ -286,15 +285,15 @@ def run_ansible_playbook(repo_path, playbook_path, ansible_binary_path, tags=Non
             if "=" in var:
                 key, value = var.split("=", 1)
                 try:
-                    # Attempt to parse the value as JSON to check if it's a dictionary
+                    # Attempt to parse the value as JSON
                     parsed_value = json.loads(value)
-                    combined_extra_vars[key] = parsed_value
-                except json.JSONDecodeError as e:
-                    print(f"Error: Failed to parse '{value}' as JSON: {e}")
-                    sys.exit(1)  # Exit the script with an error status
+                except json.JSONDecodeError:
+                    # If JSON parsing fails, treat it as a plain string
+                    parsed_value = value
+                combined_extra_vars[key] = parsed_value
             else:
                 try:
-                    # Attempt to parse the entire var as JSON to check if it's a dictionary
+                    # Attempt to parse the entire var as JSON
                     parsed_var = json.loads(var)
                     if isinstance(parsed_var, dict):
                         combined_extra_vars.update(parsed_var)
