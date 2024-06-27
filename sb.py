@@ -294,7 +294,7 @@ def run_ansible_playbook(repo_path, playbook_path, ansible_binary_path, tags=Non
                     key, value = var.split("=", 1)
                     try:
                         # Attempt to parse the value as JSON
-                        parsed_value = json.loads(value, parse_float=str, parse_int=str, parse_constant=str)
+                        parsed_value = json.loads(value, parse_float=str)
                     except json.JSONDecodeError:
                         # If JSON parsing fails, treat it as a plain string
                         parsed_value = value
