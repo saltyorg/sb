@@ -660,7 +660,7 @@ def handle_branch(arguments):
     run_ansible_playbook(SALTBOX_REPO_PATH, SALTBOX_PLAYBOOK_PATH, ANSIBLE_PLAYBOOK_BINARY_PATH, tags, skip_tags,
                          arguments.verbose)
 
-    # Cache tags if commit hash changes
+    print("Updating Saltbox tags cache.")
     asyncio.run(run_and_cache_ansible_tags(SALTBOX_REPO_PATH, SALTBOX_PLAYBOOK_PATH, ""))
 
     print(f"Saltbox repository branch switched to {arguments.branch_name} and settings updated.")
@@ -680,7 +680,7 @@ def handle_sandbox_branch(arguments):
     run_ansible_playbook(SANDBOX_REPO_PATH, SANDBOX_PLAYBOOK_PATH, ANSIBLE_PLAYBOOK_BINARY_PATH, tags, skip_tags,
                          arguments.verbose)
 
-    # Cache tags if commit hash changes
+    print("Updating Sandbox tags cache.")
     asyncio.run(run_and_cache_ansible_tags(SANDBOX_REPO_PATH, SANDBOX_PLAYBOOK_PATH, ""))
 
     print(f"Sandbox repository branch switched to {arguments.branch_name} and settings updated.")
