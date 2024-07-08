@@ -6,6 +6,9 @@ on:
       release_tag:
         required: true
 
+permissions:
+  contents: write
+
 jobs:
   update-release-file:
     runs-on: ubuntu-latest
