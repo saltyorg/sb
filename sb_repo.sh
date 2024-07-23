@@ -113,3 +113,17 @@ shopt -u nullglob
 ## Activate Git Hooks
 cd "$SALTBOX_PATH" || exit
 run_cmd bash "$SALTBOX_PATH"/bin/git/init-hooks
+
+## Download saltbox.fact file
+FACT_URL="https://github.com/saltyorg/ansible-facts/releases/latest/download/saltbox-facts"
+FACT_PATH="$SALTBOX_PATH/ansible_facts.d/saltbox.fact"
+
+$VERBOSE && echo "Downloading the saltbox.fact file..."
+mkdir -p "$(dirname "$FACT_PATH")"
+if run_cmd curl -fsSL "$FACT_URL" -o "$FACT_PATH"; then
+    run_cmd chmod +x "$FACT_PATH"
+    $VERBOSE && echo "The saltbox.fact file downloaded and set as executable."
+else
+    echo "Failed to download the saltbox.fact file."
+    exit 1
+fi

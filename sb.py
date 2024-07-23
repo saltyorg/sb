@@ -368,6 +368,42 @@ def git_fetch_and_reset(repo_path, default_branch='master', post_fetch_script=No
     print(f"Repository at {repo_path} has been updated. Current branch: '{branch}'.")
 
 
+def download_and_install_saltbox_fact(always_update=False):
+    download_url = "https://github.com/saltyorg/ansible-facts/releases/latest/download/saltbox-facts"
+    target_path = "/srv/git/saltbox/ansible_facts.d/saltbox.fact"
+
+    try:
+        if os.path.exists(target_path) and not always_update:
+            return
+
+        if always_update:
+            print("Updating saltbox.fact")
+        else:
+            print("saltbox.fact not found. Downloading...")
+
+        response = requests.get(download_url)
+        response.raise_for_status()  # Raises an HTTPError for bad responses
+
+        # Ensure the directory exists
+        os.makedirs(os.path.dirname(target_path), exist_ok=True)
+
+        # Write the content to the file
+        with open(target_path, 'wb') as f:
+            f.write(response.content)
+
+        # Make the file executable
+        os.chmod(target_path, 0o755)
+
+        print(f"Successfully {'updated' if always_update else 'installed'} saltbox.fact at {target_path}")
+    except requests.RequestException as e:
+        print(f"Error downloading saltbox.fact: {e}")
+    except IOError as e:
+        print(f"Error writing saltbox.fact: {e}")
+    except Exception as e:
+        print(f"Unexpected error {'updating' if always_update else 'installing'} saltbox.fact: {e}")
+
+
+
 def update_saltbox(saltbox_repo_path, saltbox_playbook_file, verbosity=0):
     print("Updating Saltbox...")
 
@@ -399,6 +435,9 @@ def update_saltbox(saltbox_repo_path, saltbox_playbook_file, verbosity=0):
     if old_commit_hash != new_commit_hash:
         print("Saltbox Commit Hash changed, updating tags cache.")
         asyncio.run(run_and_cache_ansible_tags(saltbox_repo_path, saltbox_playbook_file, ""))
+
+    # Always update saltbox.fact during update
+    download_and_install_saltbox_fact(always_update=True)
 
     print("Saltbox Update Completed.")
 
@@ -688,6 +727,12 @@ def handle_sandbox_branch(arguments):
     print(f"Sandbox repository branch switched to {arguments.branch_name} and settings updated.")
 
 
+def handle_reinstall_fact(_arguments):
+    print("Reinstalling saltbox.fact...")
+    download_and_install_saltbox_fact(always_update=True)
+    print("Reinstallation of saltbox.fact completed.")
+
+
 def log_subprocess_result(result, cmd, log_file_path):
     """
     Logs the command, output, and errors of a subprocess result to a file, appending to the existing contents.
@@ -864,7 +909,7 @@ def add_verbosity_argument(arg_parser):
 
 
 # Create a parser for the "update" command
-parser_update = subparsers.add_parser('update', help='Updates Saltbox and Sandbox (resets the branches to master)')
+parser_update = subparsers.add_parser('update', help='Updates Saltbox and Sandbox')
 add_verbosity_argument(parser_update)
 parser_update.set_defaults(func=handle_update)
 
@@ -892,6 +937,10 @@ parser_diag.set_defaults(func=handle_diag)
 # Create a parser for the "recreate-venv" command
 parser_recreate_venv = subparsers.add_parser('recreate-venv', help='Re-create the Ansible Python Virtual Environment')
 parser_recreate_venv.set_defaults(func=handle_recreate_venv)
+
+# Create a parser for the "reinstall-facts" command
+parser_reinstall_facts = subparsers.add_parser('reinstall-facts', help='Reinstall the saltbox.fact file')
+parser_reinstall_facts.set_defaults(func=handle_reinstall_fact)
 
 # Create a parser for the "inventory" command
 parser_inventory = subparsers.add_parser('inventory', help="Manage inventory 'localhost.yml' file")
