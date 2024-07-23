@@ -419,7 +419,10 @@ def download_and_install_saltbox_fact(always_update=False):
             else:
                 print("Failed to run current saltbox.fact. Proceeding with update.")
         else:
-            print("saltbox.fact not found or update forced. Proceeding with update.")
+            if always_update:
+                print("Update forced. Proceeding with update.")
+            else:
+                print("saltbox.fact not found. Proceeding with update.")
 
         print(f"Updating saltbox.fact to version {latest_version}")
         
