@@ -10,7 +10,6 @@ import shlex
 import asyncio
 import magic
 import requests
-import semver
 
 ################################
 # Parse Saltbox accounts.yml
