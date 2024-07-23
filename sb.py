@@ -416,6 +416,10 @@ def download_and_install_saltbox_fact(always_update=False):
                         print(f"New version available. Updating from {current_version} to {latest_version}")
                 except json.JSONDecodeError:
                     print("Failed to parse current saltbox.fact output. Proceeding with update.")
+            else:
+                print("Failed to run current saltbox.fact. Proceeding with update.")
+        else:
+            print("saltbox.fact not found or update forced. Proceeding with update.")
 
         print(f"Updating saltbox.fact to version {latest_version}")
         
@@ -441,7 +445,6 @@ def download_and_install_saltbox_fact(always_update=False):
         print(f"Unexpected error updating saltbox.fact: {e}")
 
 
-
 def update_saltbox(saltbox_repo_path, saltbox_playbook_file, verbosity=0):
     print("Updating Saltbox...")
 
@@ -462,7 +465,7 @@ def update_saltbox(saltbox_repo_path, saltbox_playbook_file, verbosity=0):
     git_fetch_and_reset(saltbox_repo_path, "master", custom_commands=custom_commands)
 
     # Always update saltbox.fact during update
-    download_and_install_saltbox_fact(always_update=True)
+    download_and_install_saltbox_fact(always_update=False)
 
     # Run Settings role with specified tags and skip-tags
     tags = ['settings']
@@ -734,7 +737,7 @@ def handle_branch(arguments):
     git_fetch_and_reset(SALTBOX_REPO_PATH, arguments.branch_name, custom_commands=custom_commands)
 
     # Always update saltbox.fact during branch change
-    download_and_install_saltbox_fact(always_update=True)
+    download_and_install_saltbox_fact(always_update=False)
 
     # Run Settings role with specified tags and skip-tags
     tags = ['settings']
