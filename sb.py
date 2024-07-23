@@ -10,6 +10,7 @@ import shlex
 import asyncio
 import magic
 import requests
+import semver
 
 ################################
 # Parse Saltbox accounts.yml
@@ -368,21 +369,59 @@ def git_fetch_and_reset(repo_path, default_branch='master', post_fetch_script=No
     print(f"Repository at {repo_path} has been updated. Current branch: '{branch}'.")
 
 
+def version_compare(v1, v2):
+    """
+    Compare two version strings.
+    :return: -1 if v1 < v2, 0 if v1 == v2, 1 if v1 > v2
+    """
+    v1_parts = v1.lstrip('v').split('.')
+    v2_parts = v2.lstrip('v').split('.')
+    
+    for i in range(max(len(v1_parts), len(v2_parts))):
+        v1_part = int(v1_parts[i]) if i < len(v1_parts) else 0
+        v2_part = int(v2_parts[i]) if i < len(v2_parts) else 0
+        
+        if v1_part < v2_part:
+            return -1
+        elif v1_part > v2_part:
+            return 1
+    
+    return 0
+
+
 def download_and_install_saltbox_fact(always_update=False):
     download_url = "https://github.com/saltyorg/ansible-facts/releases/latest/download/saltbox-facts"
     target_path = "/srv/git/saltbox/ansible_facts.d/saltbox.fact"
 
     try:
+        # Fetch the latest release info from GitHub
+        response = requests.get("https://api.github.com/repos/saltyorg/ansible-facts/releases/latest")
+        response.raise_for_status()
+        latest_release = response.json()
+        latest_version = latest_release['tag_name']
+
         if os.path.exists(target_path) and not always_update:
-            return
+            # Run the existing saltbox.fact and parse its output
+            result = subprocess.run([target_path], capture_output=True, text=True)
+            if result.returncode == 0:
+                try:
+                    current_data = json.loads(result.stdout)
+                    current_version = current_data.get("saltbox_facts_version")
+                    
+                    if current_version is None:
+                        print("Current saltbox.fact doesn't have version info. Updating...")
+                    elif version_compare(current_version, latest_version) >= 0:
+                        print(f"saltbox.fact is up to date (version {current_version})")
+                        return
+                    else:
+                        print(f"New version available. Updating from {current_version} to {latest_version}")
+                except json.JSONDecodeError:
+                    print("Failed to parse current saltbox.fact output. Proceeding with update.")
 
-        if always_update:
-            print("Updating saltbox.fact")
-        else:
-            print("saltbox.fact not found. Downloading...")
-
+        print(f"Updating saltbox.fact to version {latest_version}")
+        
         response = requests.get(download_url)
-        response.raise_for_status()  # Raises an HTTPError for bad responses
+        response.raise_for_status()
 
         # Ensure the directory exists
         os.makedirs(os.path.dirname(target_path), exist_ok=True)
@@ -394,13 +433,13 @@ def download_and_install_saltbox_fact(always_update=False):
         # Make the file executable
         os.chmod(target_path, 0o755)
 
-        print(f"Successfully {'updated' if always_update else 'installed'} saltbox.fact at {target_path}")
+        print(f"Successfully updated saltbox.fact to version {latest_version} at {target_path}")
     except requests.RequestException as e:
         print(f"Error downloading saltbox.fact: {e}")
     except IOError as e:
         print(f"Error writing saltbox.fact: {e}")
     except Exception as e:
-        print(f"Unexpected error {'updating' if always_update else 'installing'} saltbox.fact: {e}")
+        print(f"Unexpected error updating saltbox.fact: {e}")
 
 
 
