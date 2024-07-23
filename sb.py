@@ -423,6 +423,9 @@ def update_saltbox(saltbox_repo_path, saltbox_playbook_file, verbosity=0):
 
     git_fetch_and_reset(saltbox_repo_path, "master", custom_commands=custom_commands)
 
+    # Always update saltbox.fact during update
+    download_and_install_saltbox_fact(always_update=True)
+
     # Run Settings role with specified tags and skip-tags
     tags = ['settings']
     skip_tags = ['sanity-check', 'pre-tasks']
@@ -435,9 +438,6 @@ def update_saltbox(saltbox_repo_path, saltbox_playbook_file, verbosity=0):
     if old_commit_hash != new_commit_hash:
         print("Saltbox Commit Hash changed, updating tags cache.")
         asyncio.run(run_and_cache_ansible_tags(saltbox_repo_path, saltbox_playbook_file, ""))
-
-    # Always update saltbox.fact during update
-    download_and_install_saltbox_fact(always_update=True)
 
     print("Saltbox Update Completed.")
 
