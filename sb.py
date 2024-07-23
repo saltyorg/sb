@@ -733,6 +733,9 @@ def handle_branch(arguments):
 
     git_fetch_and_reset(SALTBOX_REPO_PATH, arguments.branch_name, custom_commands=custom_commands)
 
+    # Always update saltbox.fact during branch change
+    download_and_install_saltbox_fact(always_update=True)
+
     # Run Settings role with specified tags and skip-tags
     tags = ['settings']
     skip_tags = ['sanity-check', 'pre-tasks']
