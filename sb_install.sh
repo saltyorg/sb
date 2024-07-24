@@ -222,3 +222,5 @@ run_cmd bash -H $SB_PATH/sb_dep.sh $VERBOSE_OPT
 
 # Clone Saltbox Repo
 run_cmd bash -H $SB_PATH/sb_repo.sh -b "${BRANCH}" $VERBOSE_OPT
+
+echo "Saltbox Dependencies were successfully installed."
