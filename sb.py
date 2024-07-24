@@ -18,16 +18,16 @@ import requests
 saltbox_accounts_path = '/srv/git/saltbox/accounts.yml'
 
 
-def validate_structure(data):
+def validate_structure(dict_data):
     required_keys = {
         "user": ["domain", "email", "name", "pass"]
     }
 
     for key, subkeys in required_keys.items():
-        if key not in data:
+        if key not in dict_data:
             return False, f"Config file '{saltbox_accounts_path}' is missing required section: '{key}'"
         for subkey in subkeys:
-            if subkey not in data[key]:
+            if subkey not in dict_data[key]:
                 return False, f"Config file '{saltbox_accounts_path}' is missing required key '{subkey}' in section '{key}'"
 
     return True, "Valid structure"
@@ -852,11 +852,11 @@ def copy_files(paths, dest_dir):
             # Handle as a direct path
             files = [path]
         
-        for file in files:
-            if os.path.isfile(file):
-                shutil.copy(file, dest_dir)
+        for file_path in files:
+            if os.path.isfile(file_path):
+                shutil.copy(file_path, dest_dir)
             else:
-                print(f"Warning: {file} is not a file and will not be copied.")
+                print(f"Warning: {file_path} is not a file and will not be copied.")
 
 
 def manage_ansible_venv(recreate=False):
@@ -927,7 +927,7 @@ def manage_ansible_venv(recreate=False):
         print("Done updating Ansible venv.")
 
 
-def handle_version(args=None):
+def handle_version(_args=None):
     print(f"Application Version: {__version__}")
 
 
