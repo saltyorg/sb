@@ -223,6 +223,14 @@ if [[ $release =~ (focal|jammy)$ ]]; then
     install_pip
 fi
 
+## Check if venv Python exists
+if [ ! -f "/srv/ansible/venv/bin/python3" ]; then
+    echo "Virtual environment Python not found. Waiting 10 seconds..."
+    sleep 10
+    if [ ! -f "/srv/ansible/venv/bin/python3" ]; then
+        error "Virtual environment Python still not found after waiting. Exiting."
+    fi
+fi
 
 ## Install pip3 Dependencies
 run_cmd "$PYTHON3_CMD" \
