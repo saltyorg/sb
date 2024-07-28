@@ -28,24 +28,33 @@ BRANCH="master"
 ################################
 
 run_cmd() {
+    local error_output
     local cmd_exit_code
 
     if $VERBOSE; then
-        printf '%s\n' "+ $*" >&2;
+        printf '%s\n' "+ $*" >&2
         "$@"
-        cmd_exit_code=$?
     else
-        "$@" > /dev/null 2>&1
-        cmd_exit_code=$?
+        error_output=$("$@" 2>&1)
     fi
+    cmd_exit_code=$?
 
     if [ $cmd_exit_code -ne 0 ]; then
         echo "Command failed with exit code $cmd_exit_code: $*" >&2
+        if [ -n "$error_output" ]; then
+            echo "Error output: $error_output" >&2
+        fi
         exit $cmd_exit_code
     fi
 }
 
 download_binary() {
+    local github_tag
+    local version
+    local download_url
+    local temp_binary_path
+    local file_type
+
     if ! command -v file > /dev/null 2>&1; then
         run_cmd sudo apt-get update
         run_cmd sudo apt-get install -y file
@@ -168,7 +177,7 @@ if dpkg -l ubuntu-desktop &>/dev/null; then
 fi
 
 # Define required CPU features for x86-64-v2
-required_features=("sse4_2" "popcnt")
+#required_features=("sse4_2" "popcnt")
 
 # Check for x86-64-v2 support
 #for feature in "${required_features[@]}"; do
@@ -218,9 +227,9 @@ done
 shopt -u nullglob
 
 # Install Saltbox Dependencies
-run_cmd bash -H $SB_PATH/sb_dep.sh $VERBOSE_OPT
+bash -H $SB_PATH/sb_dep.sh $VERBOSE_OPT
 
 # Clone Saltbox Repo
-run_cmd bash -H $SB_PATH/sb_repo.sh -b "${BRANCH}" $VERBOSE_OPT
+bash -H $SB_PATH/sb_repo.sh -b "${BRANCH}" $VERBOSE_OPT
 
 echo "Saltbox Dependencies were successfully installed."

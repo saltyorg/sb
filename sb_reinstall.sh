@@ -31,19 +31,33 @@ TARGET_BINARY_PATH="/srv/git/sb/sb"
 ################################
 
 run_cmd() {
+    local error_output
     local cmd_exit_code
 
-    printf '%s\n' "+ $*" >&2;
-    "$@"
+    if $VERBOSE; then
+        printf '%s\n' "+ $*" >&2
+        "$@"
+    else
+        error_output=$("$@" 2>&1)
+    fi
     cmd_exit_code=$?
 
     if [ $cmd_exit_code -ne 0 ]; then
         echo "Command failed with exit code $cmd_exit_code: $*" >&2
+        if [ -n "$error_output" ]; then
+            echo "Error output: $error_output" >&2
+        fi
         exit $cmd_exit_code
     fi
 }
 
 download_binary() {
+    local github_tag
+    local version
+    local download_url
+    local temp_binary_path
+    local file_type
+
     if ! command -v file > /dev/null 2>&1; then
         run_cmd sudo apt-get update
         run_cmd sudo apt-get install -y file

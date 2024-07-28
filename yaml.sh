@@ -55,6 +55,8 @@ unset_variables() {
   unset variables
   local variables=()
   local tmpvar
+  local variable
+
   for variable in "${variable_string[@]}" ; do
     tmpvar=$(echo "$variable" | grep '=' | sed 's/=.*//' | sed 's/+.*//')
     variables+=("$tmpvar")

@@ -60,10 +60,23 @@ done
 ################################
 
 run_cmd() {
+    local error_output
+    local cmd_exit_code
+
     if $VERBOSE; then
+        printf '%s\n' "+ $*" >&2
         "$@"
     else
-        "$@" &>/dev/null
+        error_output=$("$@" 2>&1)
+    fi
+    cmd_exit_code=$?
+
+    if [ $cmd_exit_code -ne 0 ]; then
+        echo "Command failed with exit code $cmd_exit_code: $*" >&2
+        if [ -n "$error_output" ]; then
+            echo "Error output: $error_output" >&2
+        fi
+        exit $cmd_exit_code
     fi
 }
 
@@ -212,10 +225,10 @@ fi
 
 
 ## Install pip3 Dependencies
-run_cmd $PYTHON3_CMD \
+run_cmd "$PYTHON3_CMD" \
     pip setuptools wheel \
     || error "Failed to install pip setuptools and wheel with $PYTHON3_CMD"
-run_cmd $PYTHON3_CMD \
+run_cmd "$PYTHON3_CMD" \
     --requirement /srv/git/sb/requirements-saltbox.txt \
     || error "Failed to install pip3 dependencies with $PYTHON3_CMD"
 

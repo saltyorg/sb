@@ -13,7 +13,7 @@
 ################################
 
 VERBOSE=false
-BRANCH='master'
+BRANCH="master"
 SALTBOX_PATH="/srv/git/saltbox"
 SALTBOX_REPO="https://github.com/saltyorg/saltbox.git"
 
@@ -29,10 +29,23 @@ usage () {
 }
 
 run_cmd() {
+    local error_output
+    local cmd_exit_code
+
     if $VERBOSE; then
+        printf '%s\n' "+ $*" >&2
         "$@"
     else
-        "$@" &>/dev/null
+        error_output=$("$@" 2>&1)
+    fi
+    cmd_exit_code=$?
+
+    if [ $cmd_exit_code -ne 0 ]; then
+        echo "Command failed with exit code $cmd_exit_code: $*" >&2
+        if [ -n "$error_output" ]; then
+            echo "Error output: $error_output" >&2
+        fi
+        exit $cmd_exit_code
     fi
 }
 
@@ -112,7 +125,7 @@ shopt -u nullglob
 
 ## Activate Git Hooks
 cd "$SALTBOX_PATH" || exit
-run_cmd bash "$SALTBOX_PATH"/bin/git/init-hooks
+run_cmd bash "$SALTBOX_PATH/bin/git/init-hooks"
 
 ## Download saltbox.fact file
 FACT_URL="https://github.com/saltyorg/ansible-facts/releases/latest/download/saltbox-facts"

@@ -32,6 +32,12 @@ run_cmd() {
 }
 
 download_binary() {
+    local github_tag
+    local version
+    local download_url
+    local temp_binary_path
+    local file_type
+
     if ! command -v file > /dev/null 2>&1; then
         run_cmd sudo apt-get update
         run_cmd sudo apt-get install -y file
