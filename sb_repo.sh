@@ -147,4 +147,5 @@ else
     exit 1
 fi
 
+$VERBOSE && echo "sb_repo.sh ran successfully."
 exit 0
