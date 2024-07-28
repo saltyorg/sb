@@ -132,11 +132,17 @@ FACT_URL="https://github.com/saltyorg/ansible-facts/releases/latest/download/sal
 FACT_PATH="$SALTBOX_PATH/ansible_facts.d/saltbox.fact"
 
 $VERBOSE && echo "Downloading the saltbox.fact file..."
-mkdir -p "$(dirname "$FACT_PATH")"
-if run_cmd curl -fsSL "$FACT_URL" -o "$FACT_PATH"; then
+mkdir -p "$SALTBOX_PATH/ansible_facts.d"
+
+# Execute curl command and store the exit status
+curl -fsSL "$FACT_URL" -o "$FACT_PATH"
+curl_exit_status=$?
+
+# Check the exit status
+if [ $curl_exit_status -eq 0 ]; then
     run_cmd chmod +x "$FACT_PATH"
     $VERBOSE && echo "The saltbox.fact file downloaded and set as executable."
 else
-    echo "Failed to download the saltbox.fact file." >&2
+    echo "Failed to download the saltbox.fact file. curl exit status: $curl_exit_status" >&2
     exit 1
 fi
