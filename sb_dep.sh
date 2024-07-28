@@ -37,12 +37,7 @@ fi
 VERBOSE=false
 
 readonly SYSCTL_PATH="/etc/sysctl.conf"
-readonly PYTHON_CMD_SUFFIX="-m pip install \
-                            --timeout=360 \
-                            --no-cache-dir \
-                            --disable-pip-version-check \
-                            --upgrade"
-readonly PYTHON3_CMD="/srv/ansible/venv/bin/python3 $PYTHON_CMD_SUFFIX"
+readonly PYTHON3_CMD="/srv/ansible/venv/bin/python3 -m pip install --timeout=360 --no-cache-dir --disable-pip-version-check --upgrade"
 
 ################################
 # Argument Parser
@@ -221,6 +216,6 @@ if [ ! -f "/srv/ansible/venv/bin/python3" ]; then
 fi
 
 ## Install pip3 Dependencies
-run_cmd "$PYTHON3_CMD" pip setuptools wheel
-run_cmd "$PYTHON3_CMD" --requirement /srv/git/sb/requirements-saltbox.txt
+run_cmd $PYTHON3_CMD pip setuptools wheel
+run_cmd $PYTHON3_CMD --requirement /srv/git/sb/requirements-saltbox.txt
 run_cmd cp /srv/ansible/venv/bin/ansible* /usr/local/bin/
