@@ -137,6 +137,6 @@ if run_cmd curl -fsSL "$FACT_URL" -o "$FACT_PATH"; then
     run_cmd chmod +x "$FACT_PATH"
     $VERBOSE && echo "The saltbox.fact file downloaded and set as executable."
 else
-    echo "Failed to download the saltbox.fact file."
+    echo "Failed to download the saltbox.fact file." >&2
     exit 1
 fi
