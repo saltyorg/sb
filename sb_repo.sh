@@ -146,3 +146,5 @@ else
     echo "Failed to download the saltbox.fact file. curl exit status: $curl_exit_status" >&2
     exit 1
 fi
+
+exit 0

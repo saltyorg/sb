@@ -219,3 +219,5 @@ fi
 run_cmd "${PYTHON3_CMD[@]}" pip setuptools wheel
 run_cmd "${PYTHON3_CMD[@]}" --requirement /srv/git/sb/requirements-saltbox.txt
 run_cmd cp /srv/ansible/venv/bin/ansible* /usr/local/bin/
+
+exit 0
