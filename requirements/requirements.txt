@@ -4,7 +4,7 @@ idna==3.7
 Nuitka==2.4.4
 ordered-set==4.1.0
 python-magic==0.4.27
-PyYAML==6.0.1
+PyYAML==6.0.2
 requests==2.32.3
 urllib3==2.2.2
 zstandard==0.23.0
