@@ -217,6 +217,11 @@ run_cmd chmod +x $SB_PATH/*.sh
 $VERBOSE && echo "Script Path: $SCRIPT_PATH"
 $VERBOSE && echo "SB Install Path: "$SB_INSTALL_SCRIPT
 
+# Check if /usr/local/bin exists, create it if not
+if [ ! -d "/usr/local/bin" ]; then
+    run_cmd mkdir -m 0755 -p /usr/local/bin
+fi
+
 ## Create script symlinks in /usr/local/bin
 shopt -s nullglob
 for i in "$SB_PATH"/*.sh; do
