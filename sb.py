@@ -733,7 +733,7 @@ def handle_install(arguments):
         suggestions = []
         for tag in missing_tags:
             if check_tag_existence(SANDBOX_REPO_PATH, tag):
-                suggestions.append(f"'{prefix}{tag}' doesn't exist in Saltbox, but '{tag}' exists in Sandbox. "
+                suggestions.append(f"'{prefix}{tag}' doesn't exist in Saltbox, but 'sandbox-{tag}' exists in Sandbox. "
                                    f"Use 'sandbox-{tag}' instead.")
             elif check_tag_existence(SALTBOX_REPO_PATH, tag):
                 if prefix:
@@ -763,12 +763,6 @@ def handle_install(arguments):
         for i, suggestion in enumerate(all_suggestions, 1):
             cp.print_color('red', f"{i}. {suggestion.split('.')[0]}.")
             cp.print_color('green', f"   Suggestion: {'.'.join(suggestion.split('.')[1:]).strip()}")
-
-        print("----------------------------------------")
-        cp.print_color('yellow', "Summary of actions needed:")
-        for i, suggestion in enumerate(all_suggestions, 1):
-            action = suggestion.split("Use '")[1].split("'")[0] if "Use '" in suggestion else "Remove the incorrect tag"
-            print(f"{i}. {action}")
 
         sys.exit(1)
 
