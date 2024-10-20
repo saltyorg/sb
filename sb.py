@@ -757,8 +757,6 @@ def handle_install(arguments):
 
     # If there are any suggestions, print them and exit
     if all_suggestions:
-        cp.print_color('blue', "Input command:")
-        print(f"sb install {','.join(arguments.tags)}")
         print("----------------------------------------")
 
         cp.print_color('yellow', "The following issues were found with the provided tags:")
@@ -771,14 +769,6 @@ def handle_install(arguments):
         for i, suggestion in enumerate(all_suggestions, 1):
             action = suggestion.split("Use '")[1].split("'")[0] if "Use '" in suggestion else "Remove the incorrect tag"
             print(f"{i}. {action}")
-
-        corrected_tags = [tag for tag in arguments.tags if not any(tag in s for s in all_suggestions)]
-        for suggestion in all_suggestions:
-            if "Use '" in suggestion:
-                corrected_tags.append(suggestion.split("Use '")[1].split("'")[0])
-
-        cp.print_color('blue', "Corrected command:")
-        print(f"sb install {','.join(corrected_tags)}")
 
         sys.exit(1)
 
