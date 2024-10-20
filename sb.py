@@ -692,31 +692,26 @@ def handle_install(arguments):
             saltbox_tags.append(tag)
 
     # Function to validate tags and suggest alternatives
-    def validate_and_suggest(repo_path, provided_tags, prefix=""):
-        cache_valid, missing_tags = check_cache(repo_path, provided_tags)
+    def validate_and_suggest(repo_path, tags, prefix=""):
         if ignore_cache:
             return []
+        cache_valid, missing_tags = check_cache(repo_path, tags)
         suggestions = []
         for tag in missing_tags:
-            if check_tag_existence(SANDBOX_REPO_PATH, f"sandbox-{tag}"):
-                suggestions.append(f"'{prefix}{tag}' doesn't exist, but 'sandbox-{tag}' exists in Sandbox. Use 'sandbox-{tag}' instead.")
-            elif check_tag_existence(SALTBOXMOD_REPO_PATH, f"mod-{tag}"):
-                suggestions.append(f"'{prefix}{tag}' doesn't exist, but 'mod-{tag}' exists in Saltbox_mod. Use 'mod-{tag}' instead.")
-            elif check_tag_existence(SALTBOX_REPO_PATH, tag):
+            if check_tag_existence(SANDBOX_REPO_PATH, tag):
+                suggestions.append(f"'{prefix}{tag}' doesn't exist, but '{tag}' exists in Sandbox. Use 'sandbox-{tag}' instead.")
+            elif prefix != "mod-" and check_tag_existence(SALTBOX_REPO_PATH, tag):
                 if prefix:
                     suggestions.append(f"'{prefix}{tag}' doesn't exist, but '{tag}' exists in Saltbox. Remove the '{prefix}' prefix.")
             else:
-                suggestions.append(f"'{prefix}{tag}' doesn't exist in any playbook.")
+                suggestions.append(f"'{prefix}{tag}' doesn't exist in the playbook.")
         return suggestions
 
-    # Validate tags for each repository
+    # Validate tags for Saltbox/Sandbox repositories
     all_suggestions = []
 
     if saltbox_tags:
         all_suggestions.extend(validate_and_suggest(SALTBOX_REPO_PATH, saltbox_tags))
-
-    if mod_tags:
-        all_suggestions.extend(validate_and_suggest(SALTBOXMOD_REPO_PATH, mod_tags, "mod-"))
 
     if sandbox_tags:
         all_suggestions.extend(validate_and_suggest(SANDBOX_REPO_PATH, sandbox_tags, "sandbox-"))
