@@ -13,6 +13,7 @@ from typing import List, Optional, Dict, Union
 import magic
 import requests
 import yaml
+from yaml.loader import SafeLoader
 
 __version__ = "0.0.0"
 
@@ -28,8 +29,32 @@ SALTBOXMOD_PLAYBOOK_PATH = f"{SALTBOXMOD_REPO_PATH}/saltbox_mod.yml"
 SB_REPO_PATH = "/srv/git/sb"
 SB_CACHE_FILE = "/srv/git/sb/cache.json"
 
+# Global variable
+saltbox_user = None
+
 
 # Functions
+def get_saltbox_user():
+    try:
+        with open(SALTBOX_ACCOUNTS_PATH, 'r') as file:
+            data = yaml.load(file, Loader=SafeLoader)
+
+        if data and isinstance(data, dict) and 'user' in data and 'name' in data['user']:
+            return data['user']['name']
+        else:
+            print(f"Error: 'user.name' not found in {SALTBOX_ACCOUNTS_PATH}.")
+            sys.exit(1)
+    except FileNotFoundError:
+        print(f"Error: {SALTBOX_ACCOUNTS_PATH} not found.")
+        sys.exit(1)
+    except yaml.YAMLError as e:
+        print(f"Error parsing {SALTBOX_ACCOUNTS_PATH}: {e}")
+        sys.exit(1)
+    except Exception as e:
+        print(f"Unexpected error reading {SALTBOX_ACCOUNTS_PATH}: {e}")
+        sys.exit(1)
+
+
 def is_root():
     """
     Check if the current user has root privileges.
@@ -476,6 +501,8 @@ def git_fetch_and_reset(repo_path, default_branch='master',
         custom_commands (list): Optional list of custom commands to run.
 
     """
+    global saltbox_user
+
     # Get current branch name
     result = subprocess.run(
         ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
@@ -509,7 +536,7 @@ def git_fetch_and_reset(repo_path, default_branch='master',
         ['git', 'clean', '--quiet', '-df'],
         ['git', 'reset', '--quiet', '--hard', '@{u}'],
         ['git', 'submodule', 'update', '--init', '--recursive'],
-        ['chown', '-R', f'{SALTBOX_USER}:{SALTBOX_USER}', repo_path]
+        ['chown', '-R', f'{saltbox_user}:{saltbox_user}', repo_path]
     ]
 
     for command in commands:
@@ -1335,6 +1362,8 @@ def manage_ansible_venv(recreate: bool = False) -> None:
     Args:
         recreate (bool): If True, force recreation of the virtual environment.
     """
+    global saltbox_user
+
     ansible_venv_path = "/srv/ansible"
     venv_python_path = f"{ansible_venv_path}/venv/bin/python3.12"
 
@@ -1388,7 +1417,7 @@ def manage_ansible_venv(recreate: bool = False) -> None:
         "/srv/ansible/venv/bin/apprise"
     ], "/usr/local/bin/")
 
-    run_command(["chown", "-R", f"{SALTBOX_USER}:{SALTBOX_USER}", ansible_venv_path])
+    run_command(["chown", "-R", f"{saltbox_user}:{saltbox_user}", ansible_venv_path])
 
     print(f"Done {'recreating' if recreate else 'updating'} Ansible venv.")
 
@@ -1482,42 +1511,9 @@ def add_verbosity_argument(arg_parser):
 
 def main():
     """Main function to parse arguments and execute commands."""
+    global saltbox_user
 
-    def validate_structure(dict_data):
-        required_keys = {
-            "user": ["domain", "email", "name", "pass"]
-        }
-
-        for key, subkeys in required_keys.items():
-            if key not in dict_data:
-                return False, f"Config file '{SALTBOX_ACCOUNTS_PATH}' is missing required section: '{key}'"
-            for subkey in subkeys:
-                if subkey not in dict_data[key]:
-                    return False, f"Config file '{SALTBOX_ACCOUNTS_PATH}' is missing required key '{subkey}' in section '{key}'"
-
-        return True, "Valid structure"
-
-    try:
-        with open(SALTBOX_ACCOUNTS_PATH, 'r') as file:
-            data = yaml.safe_load(file)
-    except FileNotFoundError:
-        print(f"Error: Config file '{SALTBOX_ACCOUNTS_PATH}' was not found.")
-        sys.exit(1)
-    except yaml.YAMLError as e:
-        print(f"Error parsing config file '{SALTBOX_ACCOUNTS_PATH}': {e}")
-        sys.exit(1)
-
-    # Check if the file is empty
-    if data is None:
-        print(f"Error: Config file '{SALTBOX_ACCOUNTS_PATH}' is empty.")
-        sys.exit(1)
-
-    # Validate the structure of the parsed YAML
-    is_valid, message = validate_structure(data)
-    if not is_valid:
-        print(f"Error: {message}")
-        sys.exit(1)
-
+    saltbox_user = get_saltbox_user()
     relaunch_as_root()
     check_and_update_repo(SB_REPO_PATH)
 
