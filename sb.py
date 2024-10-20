@@ -135,6 +135,40 @@ def check_cache(repo_path, tags):
     return len(missing_tags) == 0, list(missing_tags)
 
 
+def supports_color():
+    """
+    Returns True if the running system's terminal supports color,
+    and False otherwise.
+    """
+    plat = sys.platform
+    supported_platform = plat != 'Pocket PC' and (plat != 'win32' or 'ANSICON' in os.environ)
+
+    # isatty is not always implemented, #6223.
+    is_a_tty = hasattr(sys.stdout, 'isatty') and sys.stdout.isatty()
+
+    if not supported_platform or not is_a_tty:
+        return False
+    return True
+
+
+class ColorPrinter:
+    def __init__(self):
+        self.use_color = supports_color()
+        self.colors = {
+            'red': '\033[91m',
+            'green': '\033[92m',
+            'yellow': '\033[93m',
+            'blue': '\033[94m',
+            'reset': '\033[0m'
+        }
+
+    def print_color(self, color, text):
+        if self.use_color:
+            print(f"{self.colors.get(color, '')}{text}{self.colors['reset']}")
+        else:
+            print(text)
+
+
 def get_console_width(default=80):
     try:
         columns, _ = shutil.get_terminal_size()
@@ -314,11 +348,11 @@ def run_ansible_playbook(repo_path, playbook_path, ansible_binary_path, tags=Non
                     else:
                         print(f"Error: Failed to parse '{var}' as valid JSON or a key=value pair.")
                         sys.exit(1)  # Exit the script with an error status
-        
+
         # Add combined extra vars as a JSON string
         if combined_extra_vars:
             command += ["--extra-vars", json.dumps(combined_extra_vars)]
-        
+
         # Add file-based extra vars
         for file_var in file_extra_vars:
             command += ["--extra-vars", file_var]
@@ -387,16 +421,16 @@ def version_compare(v1, v2):
     """
     v1_parts = v1.lstrip('v').split('.')
     v2_parts = v2.lstrip('v').split('.')
-    
+
     for i in range(max(len(v1_parts), len(v2_parts))):
         v1_part = int(v1_parts[i]) if i < len(v1_parts) else 0
         v2_part = int(v2_parts[i]) if i < len(v2_parts) else 0
-        
+
         if v1_part < v2_part:
             return -1
         elif v1_part > v2_part:
             return 1
-    
+
     return 0
 
 
@@ -418,7 +452,7 @@ def download_and_install_saltbox_fact(always_update=False):
                 try:
                     current_data = json.loads(result.stdout)
                     current_version = current_data.get("saltbox_facts_version")
-                    
+
                     if current_version is None:
                         print("Current saltbox.fact doesn't have version info. Updating...")
                     elif version_compare(current_version, latest_version) >= 0:
@@ -437,7 +471,7 @@ def download_and_install_saltbox_fact(always_update=False):
                 print("saltbox.fact not found. Proceeding with update.")
 
         print(f"Updating saltbox.fact to version {latest_version}")
-        
+
         response = requests.get(download_url)
         response.raise_for_status()
 
@@ -692,19 +726,22 @@ def handle_install(arguments):
             saltbox_tags.append(tag)
 
     # Function to validate tags and suggest alternatives
-    def validate_and_suggest(repo_path, tags, prefix=""):
+    def validate_and_suggest(repo_path, provided_tags, prefix=""):
         if ignore_cache:
             return []
-        cache_valid, missing_tags = check_cache(repo_path, tags)
+        cache_valid, missing_tags = check_cache(repo_path, provided_tags)
         suggestions = []
         for tag in missing_tags:
             if check_tag_existence(SANDBOX_REPO_PATH, tag):
-                suggestions.append(f"'{prefix}{tag}' doesn't exist, but '{tag}' exists in Sandbox. Use 'sandbox-{tag}' instead.")
+                suggestions.append(f"'{prefix}{tag}' doesn't exist, but '{tag}' exists in Sandbox. "
+                                   f"Use 'sandbox-{tag}' instead.")
             elif prefix != "mod-" and check_tag_existence(SALTBOX_REPO_PATH, tag):
                 if prefix:
-                    suggestions.append(f"'{prefix}{tag}' doesn't exist, but '{tag}' exists in Saltbox. Remove the '{prefix}' prefix.")
+                    suggestions.append(f"'{prefix}{tag}' doesn't exist, but '{tag}' exists in Saltbox. "
+                                       f"Remove the '{prefix}' prefix.")
             else:
-                suggestions.append(f"'{prefix}{tag}' doesn't exist in the playbook.")
+                suggestions.append(f"'{prefix}{tag}' doesn't exist in any playbook. Use '-e "
+                                   f"sanity_check_use_cache=false' if developing your own role.")
         return suggestions
 
     # Validate tags for Saltbox/Sandbox repositories
@@ -716,11 +753,33 @@ def handle_install(arguments):
     if sandbox_tags:
         all_suggestions.extend(validate_and_suggest(SANDBOX_REPO_PATH, sandbox_tags, "sandbox-"))
 
+    cp = ColorPrinter()
+
     # If there are any suggestions, print them and exit
     if all_suggestions:
-        print("The following issues were found with the provided tags:")
+        cp.print_color('blue', "Input command:")
+        print(f"sb install {','.join(arguments.tags)}")
+        print("----------------------------------------")
+
+        cp.print_color('yellow', "The following issues were found with the provided tags:")
+        for i, suggestion in enumerate(all_suggestions, 1):
+            cp.print_color('red', f"{i}. {suggestion.split('.')[0]}.")
+            cp.print_color('green', f"   Suggestion: {'.'.join(suggestion.split('.')[1:]).strip()}")
+
+        print("----------------------------------------")
+        cp.print_color('yellow', "Summary of actions needed:")
+        for i, suggestion in enumerate(all_suggestions, 1):
+            action = suggestion.split("Use '")[1].split("'")[0] if "Use '" in suggestion else "Remove the incorrect tag"
+            print(f"{i}. {action}")
+
+        corrected_tags = [tag for tag in arguments.tags if not any(tag in s for s in all_suggestions)]
         for suggestion in all_suggestions:
-            print(f"- {suggestion}")
+            if "Use '" in suggestion:
+                corrected_tags.append(suggestion.split("Use '")[1].split("'")[0])
+
+        cp.print_color('blue', "Corrected command:")
+        print(f"sb install {','.join(corrected_tags)}")
+
         sys.exit(1)
 
     # If all tags are valid, proceed with installation
@@ -907,7 +966,7 @@ def copy_files(paths, dest_dir):
         else:
             # Handle as a direct path
             files = [path]
-        
+
         for file_path in files:
             if os.path.isfile(file_path):
                 shutil.copy(file_path, dest_dir)
@@ -972,7 +1031,8 @@ def manage_ansible_venv(recreate=False):
            "--upgrade", "--requirement", "/srv/git/sb/requirements-saltbox.txt"]
     run_command(cmd)
 
-    copy_files(["/srv/ansible/venv/bin/ansible*", "/srv/ansible/venv/bin/certbot", "/srv/ansible/venv/bin/apprise"], "/usr/local/bin/")
+    copy_files(["/srv/ansible/venv/bin/ansible*", "/srv/ansible/venv/bin/certbot", "/srv/ansible/venv/bin/apprise"],
+               "/usr/local/bin/")
 
     cmd = ["chown", "-R", f"{SALTBOX_USER}:{SALTBOX_USER}", ansible_venv_path]
     run_command(cmd)
