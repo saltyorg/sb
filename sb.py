@@ -123,6 +123,18 @@ def update_cache(repo_path, commit_hash, tags):
         json.dump(cache, cache_file)
 
 
+def check_cache(repo_path, tags):
+    cache = get_cached_tags(repo_path)
+    if not cache:
+        return True, []  # If cache doesn't exist, proceed with playbook execution
+
+    cached_tags = set(cache.get("tags", []))
+    requested_tags = set(tags)
+
+    missing_tags = requested_tags - cached_tags
+    return len(missing_tags) == 0, list(missing_tags)
+
+
 def get_console_width(default=80):
     try:
         columns, _ = shutil.get_terminal_size()
@@ -662,27 +674,76 @@ def handle_install(arguments):
     tags = [tag.strip() for arg in arguments.tags for tag in arg.split(',') if tag.strip()]
     skip_tags = [skip_tag.strip() for arg in arguments.skip_tags for skip_tag in arg.split(',') if skip_tag.strip()]
 
+    # Check if sanity_check_use_cache is set
+    ignore_cache = any(var.startswith("sanity_check_use_cache=") for var in arguments.extra_vars)
+
+    # Function to check tag existence in a specific repo
+    def check_tag_existence(repo_path, tag):
+        cache = get_cached_tags(repo_path)
+        return tag in cache.get("tags", [])
+
     # Separate tags based on their prefix
     for tag in tags:
         if tag.startswith("mod-"):
-            # Strip "mod-" prefix and append
             mod_tags.append(tag[len("mod-"):])
         elif tag.startswith("sandbox-"):
-            # Strip "sandbox-" prefix and append
             sandbox_tags.append(tag[len("sandbox-"):])
         else:
-            saltbox_tags.append(tag)  # No prefix to strip
+            saltbox_tags.append(tag)
 
-    # Call appropriate function for each type of role
+    # Function to validate tags and suggest alternatives
+    def validate_and_suggest(repo_path, provided_tags, prefix=""):
+        cache_valid, missing_tags = check_cache(repo_path, provided_tags)
+        if ignore_cache:
+            return []
+        suggestions = []
+        for tag in missing_tags:
+            if check_tag_existence(SANDBOX_REPO_PATH, f"sandbox-{tag}"):
+                suggestions.append(f"'{prefix}{tag}' doesn't exist, but 'sandbox-{tag}' exists in Sandbox. Use 'sandbox-{tag}' instead.")
+            elif check_tag_existence(SALTBOXMOD_REPO_PATH, f"mod-{tag}"):
+                suggestions.append(f"'{prefix}{tag}' doesn't exist, but 'mod-{tag}' exists in Saltbox_mod. Use 'mod-{tag}' instead.")
+            elif check_tag_existence(SALTBOX_REPO_PATH, tag):
+                if prefix:
+                    suggestions.append(f"'{prefix}{tag}' doesn't exist, but '{tag}' exists in Saltbox. Remove the '{prefix}' prefix.")
+            else:
+                suggestions.append(f"'{prefix}{tag}' doesn't exist in any playbook.")
+        return suggestions
+
+    # Validate tags for each repository
+    all_suggestions = []
+
+    if saltbox_tags:
+        all_suggestions.extend(validate_and_suggest(SALTBOX_REPO_PATH, saltbox_tags))
+
+    if mod_tags:
+        all_suggestions.extend(validate_and_suggest(SALTBOXMOD_REPO_PATH, mod_tags, "mod-"))
+
+    if sandbox_tags:
+        all_suggestions.extend(validate_and_suggest(SANDBOX_REPO_PATH, sandbox_tags, "sandbox-"))
+
+    # If there are any suggestions, print them and exit
+    if all_suggestions:
+        print("The following issues were found with the provided tags:")
+        for suggestion in all_suggestions:
+            print(f"- {suggestion}")
+        sys.exit(1)
+
+    # If all tags are valid, proceed with installation
     if saltbox_tags:
         run_ansible_playbook(SALTBOX_REPO_PATH, SALTBOX_PLAYBOOK_PATH, ANSIBLE_PLAYBOOK_BINARY_PATH, saltbox_tags,
                              skip_tags, arguments.verbose, arguments.extra_vars)
+
     if mod_tags:
         run_ansible_playbook(SALTBOXMOD_REPO_PATH, SALTBOXMOD_PLAYBOOK_PATH, ANSIBLE_PLAYBOOK_BINARY_PATH, mod_tags,
                              skip_tags, arguments.verbose, arguments.extra_vars)
+
     if sandbox_tags:
         run_ansible_playbook(SANDBOX_REPO_PATH, SANDBOX_PLAYBOOK_PATH, ANSIBLE_PLAYBOOK_BINARY_PATH, sandbox_tags,
                              skip_tags, arguments.verbose, arguments.extra_vars)
+
+    if not (saltbox_tags or mod_tags or sandbox_tags):
+        print("No valid tags were provided for installation.")
+        sys.exit(1)
 
 
 def handle_bench(_arguments):
