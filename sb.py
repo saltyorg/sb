@@ -30,70 +30,6 @@ SB_CACHE_FILE = "/srv/git/sb/cache.json"
 
 
 # Functions
-def validate_structure(dict_data):
-    """
-    Validate the structure of the parsed YAML data.
-
-    Args:
-        dict_data (dict): The parsed YAML data.
-
-    Returns:
-        tuple: A boolean indicating validity and a message string.
-    """
-    required_keys = {
-        "user": ["domain", "email", "name", "pass"]
-    }
-
-    for key, subkeys in required_keys.items():
-        if key not in dict_data:
-            return False, (
-                f"Config file '{SALTBOX_ACCOUNTS_PATH}' is missing "
-                f"required section: '{key}'"
-            )
-        for subkey in subkeys:
-            if subkey not in dict_data[key]:
-                return False, (
-                    f"Config file '{SALTBOX_ACCOUNTS_PATH}' is missing "
-                    f"required key '{subkey}' in section '{key}'"
-                )
-
-    return True, "Valid structure"
-
-
-def parse_and_validate_config():
-    """
-    Parse and validate the Saltbox accounts.yml file.
-
-    Returns:
-        dict: The parsed and validated YAML data.
-
-    Raises:
-        SystemExit: If there's an error in parsing or validating the file.
-    """
-    try:
-        with open(SALTBOX_ACCOUNTS_PATH, 'r') as file:
-            data = yaml.safe_load(file)
-    except FileNotFoundError:
-        print(f"Error: Config file '{SALTBOX_ACCOUNTS_PATH}' was not found.")
-        sys.exit(1)
-    except yaml.YAMLError as e:
-        print(f"Error parsing config file '{SALTBOX_ACCOUNTS_PATH}': {e}")
-        sys.exit(1)
-
-    # Check if the file is empty
-    if data is None:
-        print(f"Error: Config file '{SALTBOX_ACCOUNTS_PATH}' is empty.")
-        sys.exit(1)
-
-    # Validate the structure of the parsed YAML
-    is_valid, message = validate_structure(data)
-    if not is_valid:
-        print(f"Error: {message}")
-        sys.exit(1)
-
-    return data
-
-
 def is_root():
     """
     Check if the current user has root privileges.
@@ -1546,7 +1482,42 @@ def add_verbosity_argument(arg_parser):
 
 def main():
     """Main function to parse arguments and execute commands."""
-    _config_data = parse_and_validate_config()
+
+    def validate_structure(dict_data):
+        required_keys = {
+            "user": ["domain", "email", "name", "pass"]
+        }
+
+        for key, subkeys in required_keys.items():
+            if key not in dict_data:
+                return False, f"Config file '{SALTBOX_ACCOUNTS_PATH}' is missing required section: '{key}'"
+            for subkey in subkeys:
+                if subkey not in dict_data[key]:
+                    return False, f"Config file '{SALTBOX_ACCOUNTS_PATH}' is missing required key '{subkey}' in section '{key}'"
+
+        return True, "Valid structure"
+
+    try:
+        with open(SALTBOX_ACCOUNTS_PATH, 'r') as file:
+            data = yaml.safe_load(file)
+    except FileNotFoundError:
+        print(f"Error: Config file '{SALTBOX_ACCOUNTS_PATH}' was not found.")
+        sys.exit(1)
+    except yaml.YAMLError as e:
+        print(f"Error parsing config file '{SALTBOX_ACCOUNTS_PATH}': {e}")
+        sys.exit(1)
+
+    # Check if the file is empty
+    if data is None:
+        print(f"Error: Config file '{SALTBOX_ACCOUNTS_PATH}' is empty.")
+        sys.exit(1)
+
+    # Validate the structure of the parsed YAML
+    is_valid, message = validate_structure(data)
+    if not is_valid:
+        print(f"Error: {message}")
+        sys.exit(1)
+
     relaunch_as_root()
     check_and_update_repo(SB_REPO_PATH)
 
