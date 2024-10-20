@@ -733,14 +733,14 @@ def handle_install(arguments):
         suggestions = []
         for tag in missing_tags:
             if check_tag_existence(SANDBOX_REPO_PATH, tag):
-                suggestions.append(f"'{prefix}{tag}' doesn't exist, but '{tag}' exists in Sandbox. "
+                suggestions.append(f"'{prefix}{tag}' doesn't exist in Saltbox, but '{tag}' exists in Sandbox. "
                                    f"Use 'sandbox-{tag}' instead.")
-            elif prefix != "mod-" and check_tag_existence(SALTBOX_REPO_PATH, tag):
+            elif check_tag_existence(SALTBOX_REPO_PATH, tag):
                 if prefix:
-                    suggestions.append(f"'{prefix}{tag}' doesn't exist, but '{tag}' exists in Saltbox. "
+                    suggestions.append(f"'{prefix}{tag}' doesn't exist in Sandbox, but '{tag}' exists in Saltbox. "
                                        f"Remove the '{prefix}' prefix.")
             else:
-                suggestions.append(f"'{prefix}{tag}' doesn't exist in any playbook. Use '-e "
+                suggestions.append(f"'{prefix}{tag}' doesn't exist in Saltbox nor Sandbox. Use '-e "
                                    f"sanity_check_use_cache=false' if developing your own role.")
         return suggestions
 
