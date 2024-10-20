@@ -899,7 +899,7 @@ def add_git_safe_directory_if_needed(directory):
 
 def check_and_update_repo(sb_repo_path):
     """
-    Check if the sb repository is up to date and update if necessary.
+    Check if the sb repository is up-to-date and update if necessary.
 
     Args:
         sb_repo_path (str): Path to the sb repository.
@@ -940,7 +940,7 @@ def check_and_update_repo(sb_repo_path):
 
             print("Relaunching with previous arguments.")
             executable_path = os.path.abspath(sys.argv[0])
-            subprocess.run(['sudo', executable_path] + sys.argv[1:], check=True)
+            subprocess.Popen(['sudo', executable_path] + sys.argv[1:])
             sys.exit(0)
 
     except OSError as e:
