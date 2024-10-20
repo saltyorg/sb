@@ -1052,6 +1052,7 @@ def handle_install(arguments):
         for i, suggestion in enumerate(all_suggestions, 1):
             cp.print_color('red', f"{i}. {suggestion.split('.')[0]}.")
             cp.print_color('green', f"   Suggestion: {'.'.join(suggestion.split('.')[1:]).strip()}")
+        print("----------------------------------------")
         sys.exit(1)
 
     def run_playbook(repo_path: str, playbook_path: str, playbook_tags: List[str]):
