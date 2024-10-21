@@ -907,6 +907,7 @@ def check_and_update_repo(sb_repo_path):
     Raises:
         SystemExit: If the directory doesn't exist or other errors occur.
     """
+    has_updated = False
     try:
         if not os.path.isdir(sb_repo_path):
             raise OSError(f"Directory does not exist: {sb_repo_path}")
@@ -937,17 +938,19 @@ def check_and_update_repo(sb_repo_path):
         if head_hash != upstream_hash:
             print("sb is not up to date with origin. Updating.")
             update_sb(sb_repo_path)
+            has_updated = True
 
             print("Relaunching with previous arguments.")
             executable_path = os.path.abspath(sys.argv[0])
-            subprocess.Popen(['sudo', executable_path] + sys.argv[1:])
-            sys.exit(0)
+            result = subprocess.run(['sudo', executable_path] + sys.argv[1:], check=True)
+            sys.exit(result.returncode)
 
     except OSError as e:
         print(f"Error: {e}")
         sys.exit(1)
     except subprocess.CalledProcessError as e:
-        print(f"Error executing git command: {e}")
+        if not has_updated:
+            print(f"Error executing git command: {e}")
         sys.exit(1)
 
 
