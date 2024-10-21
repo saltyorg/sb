@@ -7,8 +7,10 @@ import shlex
 import shutil
 import subprocess
 import sys
+import threading
+import time
 from subprocess import CompletedProcess, CalledProcessError
-from typing import List, Optional, Dict, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
 import magic
 import requests
@@ -406,12 +408,12 @@ def handle_recreate_venv(_arguments):
     """
     Handle the command to recreate the Ansible virtual environment.
 
-    This function calls manage_ansible_venv with the recreate flag set to True.
+    This function calls manage_ansible_venv with the force_recreate flag set to True.
 
     Args:
         _arguments: Unused arguments from the command line parser.
     """
-    manage_ansible_venv(recreate=True)
+    manage_ansible_venv(force_recreate=True)
 
 
 def run_ansible_playbook(repo_path, playbook_path, ansible_binary_path,
@@ -689,7 +691,7 @@ def update_saltbox(saltbox_repo_path, saltbox_playbook_file, verbosity=0):
         print("Error: SB_REPO_PATH does not exist or is not a directory.")
         sys.exit(1)
 
-    manage_ansible_venv(False)
+    manage_ansible_venv(force_recreate=False)
 
     # Define custom commands for Saltbox update
     custom_commands = [
@@ -1354,7 +1356,126 @@ def copy_files(paths: List[str], dest_dir: str) -> None:
                 print(f"Warning: {file_path} is not a file and will not be copied.")
 
 
-def manage_ansible_venv(recreate: bool = False) -> None:
+def create_colored_circle(color_code: str) -> str:
+    """Create a colored circle using ANSI escape codes."""
+    return f"\033[{color_code}m●\033[0m"
+
+
+class AnimatedTask:
+    """A class for creating animated tasks with status indicators."""
+
+    def __init__(self, task_description: str) -> None:
+        """Initialize the AnimatedTask with the given description."""
+        self.task_description: str = task_description
+        self.running: bool = False
+        self.completed: bool = False
+        self.status: str = 'running'
+        self.color_support: bool = supports_color()
+        self.icons: Dict[str, List[str]] = {}
+        self.setup_icons()
+
+    def setup_icons(self) -> None:
+        """Set up the icons based on color support."""
+        if self.color_support:
+            self.icons = {
+                'spinner': ['◐', '◓', '◑', '◒'],
+                'success': create_colored_circle('32'),  # Green
+                'warning': create_colored_circle('33'),  # Yellow
+                'error': create_colored_circle('31'),    # Red
+                'info': create_colored_circle('34'),     # Blue
+            }
+        else:
+            self.icons = {
+                'spinner': ['|', '/', '-', '\\'],
+                'success': '+',
+                'warning': '!',
+                'error': 'x',
+                'info': 'i',
+            }
+
+    def animate(self) -> None:
+        """Animate the task status."""
+        idx = 0
+        while self.running:
+            if self.status == 'running':
+                icon = self.icons['spinner'][idx % len(self.icons['spinner'])]
+            else:
+                icon = self.icons.get(self.status, ' ')
+
+            sys.stdout.write(f"\r {icon}  {self.task_description}")
+            sys.stdout.flush()
+            time.sleep(0.1)
+            idx += 1
+
+    def start(self) -> None:
+        """Start the task animation."""
+        self.running = True
+        threading.Thread(target=self.animate, daemon=True).start()
+
+    def stop(self, status: str = 'success') -> None:
+        """Stop the task animation and display final status."""
+        self.running = False
+        icon = self.icons.get(status, ' ')
+        sys.stdout.write(f"\r {icon}  {self.task_description}\n")
+        sys.stdout.flush()
+        self.completed = True
+
+    def set_warning(self) -> None:
+        """Set the task status to warning."""
+        self.status = 'warning'
+
+    def set_error(self) -> None:
+        """Set the task status to error."""
+        self.status = 'error'
+
+
+def print_info(message: str) -> None:
+    """Print an informational message with a blue circle prefix."""
+    icon = create_colored_circle('34') if supports_color() else 'i'
+    print(f" {icon}  {message}")
+
+
+def run_task_with_animation(
+        task_description: str,
+        task_function: Callable[..., Any],
+        *args: Any,
+        **kwargs: Any
+) -> Any:
+    """
+    Run a task with an animated status indicator.
+
+    Args:
+        task_description: Description of the task.
+        task_function: Function to run as the task.
+        *args: Positional arguments to pass to the task function.
+        **kwargs: Keyword arguments to pass to the task function.
+
+    Returns:
+        The result of the task function.
+
+    Raises:
+        Exception: If the task function raises an exception.
+    """
+    animated_task = AnimatedTask(task_description)
+    animated_task.start()
+    try:
+        result = task_function(animated_task, *args, **kwargs)
+        if animated_task.status == 'warning':
+            animated_task.stop('warning')
+        elif animated_task.status == 'error':
+            animated_task.stop('error')
+        else:
+            animated_task.stop('success')
+        return result
+    except Exception as e:
+        animated_task.stop('error')
+        print(f"Error in task '{task_description}':")
+        print(f"  Type: {type(e).__name__}")
+        print(f"  Message: {str(e)}")
+        sys.exit(1)
+
+
+def manage_ansible_venv(force_recreate: bool = False) -> None:
     """
     Manage the Ansible virtual environment.
 
@@ -1362,23 +1483,42 @@ def manage_ansible_venv(recreate: bool = False) -> None:
     based on the current system state and the 'recreate' flag.
 
     Args:
-        recreate (bool): If True, force recreation of the virtual environment.
+        force_recreate (bool): If True, force recreation of the virtual environment.
     """
     global saltbox_user
 
     ansible_venv_path = "/srv/ansible"
     venv_python_path = f"{ansible_venv_path}/venv/bin/python3.12"
+    python_missing = False
 
-    if os.path.isdir(f"{ansible_venv_path}/venv/bin") and not os.path.isfile(venv_python_path):
-        print("Python 3.12 not detected in venv, forcing recreate.")
-        recreate = True
+    def check_python_version(animated_task: AnimatedTask) -> bool:
+        nonlocal python_missing
+        if os.path.isdir(f"{ansible_venv_path}/venv/bin") and not os.path.isfile(venv_python_path):
+            animated_task.set_warning()
+            python_missing = True
+        return python_missing
 
-    print("Recreating Ansible venv." if recreate else "Updating Ansible venv.")
+    python_missing = run_task_with_animation("Checking Python version in venv", check_python_version)
 
-    release = subprocess.check_output(["lsb_release", "-cs"], text=True).strip()
+    recreate = force_recreate or python_missing
+
+    if force_recreate:
+        print_info("Recreate flag set, forcing recreation of Ansible venv.")
+    elif python_missing:
+        print_info("Python 3.12 not detected in venv, recreation required.")
+
+    print_info("Recreating Ansible venv." if recreate else "Updating Ansible venv.")
+
+    def detect_os_release(_animated_task: AnimatedTask) -> str:
+        return subprocess.check_output(["lsb_release", "-cs"], text=True).strip()
+
+    release = run_task_with_animation("Detecting OS release", detect_os_release)
 
     if recreate:
-        run_command(["rm", "-rf", ansible_venv_path])
+        def remove_existing_venv(_animated_task: AnimatedTask) -> None:
+            run_command(["rm", "-rf", ansible_venv_path])
+
+        run_task_with_animation("Removing existing Ansible venv", remove_existing_venv)
 
     if not os.path.isdir(ansible_venv_path):
         env = os.environ.copy()
@@ -1386,42 +1526,82 @@ def manage_ansible_venv(recreate: bool = False) -> None:
         python_cmd = "python3.12"
 
         if release in ("focal", "jammy"):
-            run_command(["add-apt-repository", "ppa:deadsnakes/ppa", "--yes"], env=env)
-            run_command([
-                "apt-get", "install", "python3.12", "python3.12-dev",
-                "python3.12-distutils", "python3.12-venv", "-y"
-            ], env=env)
-            run_command([python_cmd, "-m", "ensurepip"])
-            os.makedirs(ansible_venv_path, exist_ok=True)
-            run_command([python_cmd, "-m", "venv", "venv"], cwd=ansible_venv_path)
+            def add_python_ppa(_animated_task: AnimatedTask) -> None:
+                run_command(["add-apt-repository", "ppa:deadsnakes/ppa", "--yes"], env=env)
+
+            run_task_with_animation("Adding PPA for Python 3.12", add_python_ppa)
+
+            def install_python(_animated_task: AnimatedTask) -> None:
+                run_command([
+                    "apt-get", "install", "python3.12", "python3.12-dev",
+                    "python3.12-distutils", "python3.12-venv", "-y"
+                ], env=env)
+
+            run_task_with_animation("Installing Python 3.12 and dependencies", install_python)
+
+            def ensure_pip(_animated_task: AnimatedTask) -> None:
+                run_command([python_cmd, "-m", "ensurepip"])
+
+            run_task_with_animation("Ensuring pip is installed", ensure_pip)
+
+            def create_venv_dir(_animated_task: AnimatedTask) -> None:
+                os.makedirs(ansible_venv_path, exist_ok=True)
+
+            run_task_with_animation("Creating Ansible venv directory", create_venv_dir)
+
+            def create_python_venv(_animated_task: AnimatedTask) -> None:
+                run_command([python_cmd, "-m", "venv", "venv"], cwd=ansible_venv_path)
+
+            run_task_with_animation("Creating Python virtual environment", create_python_venv)
+
         elif release == "noble":
-            os.makedirs(ansible_venv_path, exist_ok=True)
-            run_command([python_cmd, "-m", "venv", "venv"], cwd=ansible_venv_path)
+            def create_venv_dir(_animated_task: AnimatedTask) -> None:
+                os.makedirs(ansible_venv_path, exist_ok=True)
+
+            run_task_with_animation("Creating Ansible venv directory", create_venv_dir)
+
+            def create_python_venv(_animated_task: AnimatedTask) -> None:
+                run_command([python_cmd, "-m", "venv", "venv"], cwd=ansible_venv_path)
+
+            run_task_with_animation("Creating Python virtual environment", create_python_venv)
+
         else:
-            print("Unsupported OS.")
+            print_info("Unsupported OS.")
             sys.exit(1)
 
-    run_command([
-        "/srv/ansible/venv/bin/python3", "-m", "pip", "install",
-        "--no-cache-dir", "--disable-pip-version-check",
-        "--upgrade", "pip", "setuptools", "wheel"
-    ])
+    def upgrade_pip(_animated_task: AnimatedTask) -> None:
+        run_command([
+            "/srv/ansible/venv/bin/python3", "-m", "pip", "install",
+            "--no-cache-dir", "--disable-pip-version-check",
+            "--upgrade", "pip", "setuptools", "wheel"
+        ])
 
-    run_command([
-        "/srv/ansible/venv/bin/python3", "-m", "pip", "install",
-        "--no-cache-dir", "--disable-pip-version-check",
-        "--upgrade", "--requirement", "/srv/git/sb/requirements-saltbox.txt"
-    ])
+    run_task_with_animation("Upgrading pip, setuptools, and wheel", upgrade_pip)
 
-    copy_files([
-        "/srv/ansible/venv/bin/ansible*",
-        "/srv/ansible/venv/bin/certbot",
-        "/srv/ansible/venv/bin/apprise"
-    ], "/usr/local/bin/")
+    def install_requirements(_animated_task: AnimatedTask) -> None:
+        run_command([
+            "/srv/ansible/venv/bin/python3", "-m", "pip", "install",
+            "--no-cache-dir", "--disable-pip-version-check",
+            "--upgrade", "--requirement", "/srv/git/sb/requirements-saltbox.txt"
+        ])
 
-    run_command(["chown", "-R", f"{saltbox_user}:{saltbox_user}", ansible_venv_path])
+    run_task_with_animation("Installing Saltbox pip requirements", install_requirements)
 
-    print(f"Done {'recreating' if recreate else 'updating'} Ansible venv.")
+    def copy_binaries(_animated_task: AnimatedTask) -> None:
+        copy_files([
+            "/srv/ansible/venv/bin/ansible*",
+            "/srv/ansible/venv/bin/certbot",
+            "/srv/ansible/venv/bin/apprise"
+        ], "/usr/local/bin/")
+
+    run_task_with_animation("Copying Ansible, certbot and apprise binaries to /usr/local/bin", copy_binaries)
+
+    def set_ownership(_animated_task: AnimatedTask) -> None:
+        run_command(["chown", "-R", f"{saltbox_user}:{saltbox_user}", ansible_venv_path])
+
+    run_task_with_animation("Setting correct ownership for Ansible venv", set_ownership)
+
+    print_info(f"Done {'recreating' if recreate else 'updating'} Ansible venv.")
 
 
 def handle_version(_args=None) -> None:
