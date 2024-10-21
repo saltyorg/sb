@@ -884,15 +884,13 @@ def add_git_safe_directory_if_needed(directory):
     result = subprocess.run(
         ['git', 'config', '--global', '--get-all', 'safe.directory'],
         stdout=subprocess.PIPE,
-        text=True,
-        check=True
+        text=True
     )
     safe_directories = result.stdout.strip().split('\n')
 
     if directory not in safe_directories:
         subprocess.run(
-            ['git', 'config', '--global', '--add', 'safe.directory', directory],
-            check=True
+            ['git', 'config', '--global', '--add', 'safe.directory', directory]
         )
         print(f"Added {directory} to git safe.directory.")
 
