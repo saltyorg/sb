@@ -24,7 +24,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup venv
-        run: python3.10 -m venv venv
+        run: python3.12 -m venv venv
 
       - name: Install Dependencies
         run: ./venv/bin/pip install --disable-pip-version-check -r requirements/requirements.txt
