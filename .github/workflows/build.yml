@@ -35,8 +35,9 @@ jobs:
       - name: Prepare script with version
         if: startsWith(github.ref, 'refs/tags/') && github.event_name != 'pull_request'
         run: |
-          echo "Building with version ${GITHUB_REF#refs/tags/}"
-          sed -i "s/__version__ = \"0.0.0\"/__version__ = \"${GITHUB_REF#refs/tags/}\"/" sb.py
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "Building with version ${VERSION}"
+          sed -i "s/__version__ = \"0.0.0\"/__version__ = \"${VERSION}\"/" sb.py
 
       - name: Compile binary
         run: ./venv/bin/python -m nuitka sb.py --onefile -o sb && chmod +x sb
