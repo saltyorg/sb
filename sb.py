@@ -1617,6 +1617,10 @@ def handle_version(_args=None) -> None:
 def create_parser():
     """Create and configure the argument parser."""
     parser = argparse.ArgumentParser(description='Saltbox command line interface.')
+
+    # Add global --no-update flag
+    parser.add_argument('--no-update', action='store_true', help=argparse.SUPPRESS)
+
     subparsers = parser.add_subparsers(help='Available sub-commands')
 
     # Update command
@@ -1697,10 +1701,12 @@ def main():
 
     saltbox_user = get_saltbox_user()
     relaunch_as_root()
-    check_and_update_repo(SB_REPO_PATH)
 
     parser = create_parser()
     args = parser.parse_args()
+
+    if not args.no_update:
+        check_and_update_repo(SB_REPO_PATH)
 
     if args.version:
         handle_version()
