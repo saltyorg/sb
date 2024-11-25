@@ -1,7 +1,7 @@
 certifi==2024.8.30
 charset-normalizer==3.4.0
 idna==3.10
-Nuitka==2.5.1
+Nuitka==2.5.4
 ordered-set==4.1.0
 python-magic==0.4.27
 PyYAML==6.0.2
