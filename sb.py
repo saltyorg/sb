@@ -1526,6 +1526,7 @@ def manage_ansible_venv(force_recreate: bool = False) -> None:
         run_command(["apt-get", "remove", "-y"] + packages_to_remove, env=env)
         run_command(["apt-get", "autoremove", "-y"], env=env)
         run_command(["apt-get", "clean"], env=env)
+        run_command(["apt-get", "update"], env=env)
 
     def check_python_version(animated_task: AnimatedTask) -> bool:
         nonlocal python_missing
@@ -1574,20 +1575,16 @@ def manage_ansible_venv(force_recreate: bool = False) -> None:
                         "python3.12-distutils", "python3.12-venv", "-y"
                     ], env=env)
                 except subprocess.CalledProcessError as e:
-                    if hasattr(e, 'output') and isinstance(e.output, (str, bytes)):
-                        error_output = e.output.decode('utf-8') if isinstance(e.output, bytes) else e.output
-                        if has_python_dependency_error(error_output):
-                            print_info("Detected Python package dependency conflict. Cleaning up packages...")
-                            fix_python_dependencies(_animated_task)
-                            # Try installation again after cleanup
-                            run_command([
-                                "apt-get", "install", "python3.12", "python3.12-dev",
-                                "python3.12-distutils", "python3.12-venv", "-y"
-                            ], env=env)
-                        else:
-                            raise  # Re-raise if it's a different error
+                    if has_python_dependency_error(str(e)):
+                        print_info("Detected Python package dependency conflict. Cleaning up packages...")
+                        fix_python_dependencies(_animated_task)
+                        # Try installation again after cleanup
+                        run_command([
+                            "apt-get", "install", "python3.12", "python3.12-dev",
+                            "python3.12-distutils", "python3.12-venv", "-y"
+                        ], env=env)
                     else:
-                        raise  # Re-raise if we can't check the error output
+                        raise  # Re-raise if it's a different error
 
             run_task_with_animation("Installing Python 3.12 and dependencies", install_python)
 
