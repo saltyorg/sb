@@ -1291,7 +1291,7 @@ def _get_output(output: Union[str, bytes, None]) -> str:
     return ""
 
 
-def run_command(cmd: List[str], env: Optional[Dict[str, str]] = None, cwd: Optional[str] = None) -> None:
+def run_command(cmd: List[str], env: Optional[Dict[str, str]] = None, cwd: Optional[str] = None, no_raise: bool = False) -> Optional[subprocess.CompletedProcess]:
     """
     Execute a command using subprocess and log the results.
 
@@ -1303,6 +1303,8 @@ def run_command(cmd: List[str], env: Optional[Dict[str, str]] = None, cwd: Optio
         env (Optional[Dict[str, str]]): Dictionary of environment variables
                                         to set for the subprocess.
         cwd (Optional[str]): Directory to change to before executing the command.
+        no_raise (bool): If True, pass through the original CalledProcessError
+                        instead of wrapping it.
 
     Raises:
         subprocess.CalledProcessError: If the command execution fails.
@@ -1320,13 +1322,17 @@ def run_command(cmd: List[str], env: Optional[Dict[str, str]] = None, cwd: Optio
             check=True
         )
         log_subprocess_result(result, cmd, log_file_path)
+        return result
     except CalledProcessError as e:
         log_subprocess_result(e, cmd, log_file_path)
-        raise CalledProcessError(
-            e.returncode,
-            e.cmd,
-            f"Failed running {' '.join(cmd)} with error: {e.stderr}"
-        ) from e
+        if no_raise:
+            raise
+        else:
+            raise CalledProcessError(
+                e.returncode,
+                e.cmd,
+                f"Failed running {' '.join(cmd)} with error: {e.stderr}"
+            ) from e
 
 
 def copy_files(paths: List[str], dest_dir: str) -> None:
@@ -1591,7 +1597,7 @@ def manage_ansible_venv(force_recreate: bool = False) -> None:
                     run_command([
                         "apt-get", "install", "python3.12", "python3.12-dev",
                         "python3.12-distutils", "python3.12-venv", "-y"
-                    ], env=env)
+                    ], env=env, no_raise=True)
                 except subprocess.CalledProcessError as e:
                     if has_python_dependency_error(str(e)):
                         print_info("Detected Python package dependency conflict. Cleaning up packages...")
