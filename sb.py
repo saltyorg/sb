@@ -1614,6 +1614,38 @@ def handle_version(_args=None) -> None:
     print(f"Application Version: {__version__}")
 
 
+def remove_python(_animated_task: AnimatedTask) -> None:
+    """
+    Remove Python 3.12 packages.
+
+    Args:
+        _animated_task: The animated task instance tracking progress.
+    """
+    packages = [
+        "libpython3.12-minimal",
+        "python3.12-minimal",
+        "libpython3.12",
+        "libpython3.12-dev",
+        "python3.12",
+        "python3.12-dev",
+        "python3.12-venv",
+        "libpython3.12-stdlib"
+    ]
+
+    run_command(["apt", "remove", "-y"] + packages)
+
+def handle_reinstall_python(_arguments):
+    """
+    Handle the reinstall-python command by removing Python 3.12 and recreating the venv.
+
+    Args:
+        _arguments: Unused arguments from the command line parser.
+    """
+    print_info("Removing Python 3.12 packages and recreating Ansible venv.")
+    run_task_with_animation("Removing Python 3.12 packages", remove_python)
+    manage_ansible_venv(force_recreate=True)
+
+
 def create_parser():
     """Create and configure the argument parser."""
     parser = argparse.ArgumentParser(description='Saltbox command line interface.')
@@ -1652,6 +1684,11 @@ def create_parser():
     parser_recreate_venv = subparsers.add_parser('recreate-venv',
                                                  help='Re-create the Ansible Python Virtual Environment')
     parser_recreate_venv.set_defaults(func=handle_recreate_venv)
+
+    # Reinstall-python command
+    parser_reinstall_python = subparsers.add_parser('reinstall-python',
+                                                 help='Reintall Python 3.12 and recreate the Ansible venv')
+    parser_reinstall_python.set_defaults(func=handle_reinstall_python)
 
     # Reinstall-facts command
     parser_reinstall_facts = subparsers.add_parser('reinstall-facts', help='Reinstall the saltbox.fact file')
