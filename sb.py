@@ -1497,6 +1497,15 @@ def manage_ansible_venv(force_recreate: bool = False) -> None:
     python_missing = False
 
     def has_python_dependency_error(error_output: str) -> bool:
+        """
+        Check if the error output indicates a Python dependency conflict.
+
+        Args:
+            error_output: The error message to check
+
+        Returns:
+            bool: True if this is a Python dependency conflict error
+        """
         # List of packages to check for in error messages
         problem_packages = [
             "libpython3.12-stdlib",
@@ -1507,6 +1516,10 @@ def manage_ansible_venv(force_recreate: bool = False) -> None:
             "python3.12-dev",
             "python3.12-venv"
         ]
+
+        # Handle None or empty error output
+        if not error_output:
+            return False
 
         # Check if this is a dependency error
         if "unmet dependencies" not in error_output:
@@ -1580,7 +1593,7 @@ def manage_ansible_venv(force_recreate: bool = False) -> None:
                         "python3.12-distutils", "python3.12-venv", "-y"
                     ], env=env)
                 except subprocess.CalledProcessError as e:
-                    if has_python_dependency_error(e.stderr):
+                    if has_python_dependency_error(str(e)):
                         print_info("Detected Python package dependency conflict. Cleaning up packages...")
                         fix_python_dependencies(_animated_task)
                         # Try installation again after cleanup
