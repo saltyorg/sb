@@ -1291,7 +1291,7 @@ def _get_output(output: Union[str, bytes, None]) -> str:
     return ""
 
 
-def run_command(cmd: List[str], env: Optional[Dict[str, str]] = None, cwd: Optional[str] = None, no_raise: bool = False) -> Optional[subprocess.CompletedProcess]:
+def run_command(cmd: List[str], env: Optional[Dict[str, str]] = None, cwd: Optional[str] = None) -> None:
     """
     Execute a command using subprocess and log the results.
 
@@ -1303,8 +1303,6 @@ def run_command(cmd: List[str], env: Optional[Dict[str, str]] = None, cwd: Optio
         env (Optional[Dict[str, str]]): Dictionary of environment variables
                                         to set for the subprocess.
         cwd (Optional[str]): Directory to change to before executing the command.
-        no_raise (bool): If True, pass through the original CalledProcessError
-                        instead of wrapping it.
 
     Raises:
         subprocess.CalledProcessError: If the command execution fails.
@@ -1322,17 +1320,13 @@ def run_command(cmd: List[str], env: Optional[Dict[str, str]] = None, cwd: Optio
             check=True
         )
         log_subprocess_result(result, cmd, log_file_path)
-        return result
     except CalledProcessError as e:
         log_subprocess_result(e, cmd, log_file_path)
-        if no_raise:
-            raise
-        else:
-            raise CalledProcessError(
-                e.returncode,
-                e.cmd,
-                f"Failed running {' '.join(cmd)} with error: {e.stderr}"
-            ) from e
+        raise CalledProcessError(
+            e.returncode,
+            e.cmd,
+            f"Failed running {' '.join(cmd)} with error: {e.stderr}"
+        ) from e
 
 
 def copy_files(paths: List[str], dest_dir: str) -> None:
@@ -1445,7 +1439,6 @@ def run_task_with_animation(
         task_description: str,
         task_function: Callable[..., Any],
         *args: Any,
-        allow_error_handling: bool = False,
         **kwargs: Any
 ) -> Any:
     """
@@ -1454,7 +1447,6 @@ def run_task_with_animation(
     Args:
         task_description: Description of the task.
         task_function: Function to run as the task.
-        allow_error_handling: If True, allows exceptions to propagate for handling by caller.
         *args: Positional arguments to pass to the task function.
         **kwargs: Keyword arguments to pass to the task function.
 
@@ -1462,7 +1454,7 @@ def run_task_with_animation(
         The result of the task function.
 
     Raises:
-        Exception: If the task function raises an exception and allow_error_handling is True.
+        Exception: If the task function raises an exception.
     """
     animated_task = AnimatedTask(task_description)
     animated_task.start()
@@ -1477,13 +1469,10 @@ def run_task_with_animation(
         return result
     except Exception as e:
         animated_task.stop('error')
-        if allow_error_handling:
-            raise
-        else:
-            print(f"Error in task '{task_description}':")
-            print(f"  Type: {type(e).__name__}")
-            print(f"  Message: {str(e)}")
-            sys.exit(1)
+        print(f"Error in task '{task_description}':")
+        print(f"  Type: {type(e).__name__}")
+        print(f"  Message: {str(e)}")
+        sys.exit(1)
 
 
 def manage_ansible_venv(force_recreate: bool = False) -> None:
@@ -1501,56 +1490,6 @@ def manage_ansible_venv(force_recreate: bool = False) -> None:
     ansible_venv_path = "/srv/ansible"
     venv_python_path = f"{ansible_venv_path}/venv/bin/python3.12"
     python_missing = False
-
-    def has_python_dependency_error(error_output: str) -> bool:
-        """
-        Check if the error output indicates a Python dependency conflict.
-
-        Args:
-            error_output: The error message to check
-
-        Returns:
-            bool: True if this is a Python dependency conflict error
-        """
-        # List of packages to check for in error messages
-        problem_packages = [
-            "libpython3.12-stdlib",
-            "libpython3.12-minimal",
-            "libpython3.12",
-            "libpython3.12-dev",
-            "python3.12",
-            "python3.12-dev",
-            "python3.12-venv"
-        ]
-
-        # Handle None or empty error output
-        if not error_output:
-            return False
-
-        # Check if this is a dependency error
-        if "unmet dependencies" not in error_output:
-            return False
-
-        # Check if any of our problematic packages are mentioned
-        return any(pkg in error_output for pkg in problem_packages)
-
-    def fix_python_dependencies(_animated_task: AnimatedTask) -> None:
-        env = os.environ.copy()
-        env["DEBIAN_FRONTEND"] = "noninteractive"
-        packages_to_remove = [
-            "libpython3.12-minimal",
-            "libpython3.12-stdlib",
-            "python3.12-minimal",
-            "libpython3.12",
-            "libpython3.12-dev",
-            "python3.12",
-            "python3.12-dev",
-            "python3.12-venv"
-        ]
-        run_command(["apt-get", "remove", "-y"] + packages_to_remove, env=env)
-        run_command(["apt-get", "autoremove", "-y"], env=env)
-        run_command(["apt-get", "clean"], env=env)
-        run_command(["apt-get", "update"], env=env)
 
     def check_python_version(animated_task: AnimatedTask) -> bool:
         nonlocal python_missing
@@ -1593,24 +1532,12 @@ def manage_ansible_venv(force_recreate: bool = False) -> None:
             run_task_with_animation("Adding PPA for Python 3.12", add_python_ppa)
 
             def install_python(_animated_task: AnimatedTask) -> None:
-                try:
-                    run_command([
-                        "apt-get", "install", "python3.12", "python3.12-dev",
-                        "python3.12-distutils", "python3.12-venv", "-y"
-                    ], env=env, no_raise=True)
-                except subprocess.CalledProcessError as e:
-                    if has_python_dependency_error(str(e)):
-                        print_info("Detected Python package dependency conflict. Cleaning up packages...")
-                        fix_python_dependencies(_animated_task)
-                        # Try installation again after cleanup
-                        run_command([
-                            "apt-get", "install", "python3.12", "python3.12-dev",
-                            "python3.12-distutils", "python3.12-venv", "-y"
-                        ], env=env)
-                    else:
-                        raise  # Re-raise if it's a different error
+                run_command([
+                    "apt-get", "install", "python3.12", "python3.12-dev",
+                    "python3.12-distutils", "python3.12-venv", "-y"
+                ], env=env)
 
-            run_task_with_animation("Installing Python 3.12 and dependencies", install_python, allow_error_handling=True)
+            run_task_with_animation("Installing Python 3.12 and dependencies", install_python)
 
             def ensure_pip(_animated_task: AnimatedTask) -> None:
                 run_command([python_cmd, "-m", "ensurepip"])
