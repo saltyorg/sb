@@ -1439,6 +1439,7 @@ def run_task_with_animation(
         task_description: str,
         task_function: Callable[..., Any],
         *args: Any,
+        allow_error_handling: bool = False,
         **kwargs: Any
 ) -> Any:
     """
@@ -1447,6 +1448,7 @@ def run_task_with_animation(
     Args:
         task_description: Description of the task.
         task_function: Function to run as the task.
+        allow_error_handling: If True, allows exceptions to propagate for handling by caller.
         *args: Positional arguments to pass to the task function.
         **kwargs: Keyword arguments to pass to the task function.
 
@@ -1454,7 +1456,7 @@ def run_task_with_animation(
         The result of the task function.
 
     Raises:
-        Exception: If the task function raises an exception.
+        Exception: If the task function raises an exception and allow_error_handling is True.
     """
     animated_task = AnimatedTask(task_description)
     animated_task.start()
@@ -1469,10 +1471,13 @@ def run_task_with_animation(
         return result
     except Exception as e:
         animated_task.stop('error')
-        print(f"Error in task '{task_description}':")
-        print(f"  Type: {type(e).__name__}")
-        print(f"  Message: {str(e)}")
-        sys.exit(1)
+        if allow_error_handling:
+            raise
+        else:
+            print(f"Error in task '{task_description}':")
+            print(f"  Type: {type(e).__name__}")
+            print(f"  Message: {str(e)}")
+            sys.exit(1)
 
 
 def manage_ansible_venv(force_recreate: bool = False) -> None:
@@ -1575,7 +1580,7 @@ def manage_ansible_venv(force_recreate: bool = False) -> None:
                         "python3.12-distutils", "python3.12-venv", "-y"
                     ], env=env)
                 except subprocess.CalledProcessError as e:
-                    if has_python_dependency_error(str(e)):
+                    if has_python_dependency_error(e.stderr):
                         print_info("Detected Python package dependency conflict. Cleaning up packages...")
                         fix_python_dependencies(_animated_task)
                         # Try installation again after cleanup
@@ -1586,7 +1591,7 @@ def manage_ansible_venv(force_recreate: bool = False) -> None:
                     else:
                         raise  # Re-raise if it's a different error
 
-            run_task_with_animation("Installing Python 3.12 and dependencies", install_python)
+            run_task_with_animation("Installing Python 3.12 and dependencies", install_python, allow_error_handling=True)
 
             def ensure_pip(_animated_task: AnimatedTask) -> None:
                 run_command([python_cmd, "-m", "ensurepip"])
