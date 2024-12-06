@@ -1491,6 +1491,25 @@ def manage_ansible_venv(force_recreate: bool = False) -> None:
     venv_python_path = f"{ansible_venv_path}/venv/bin/python3.12"
     python_missing = False
 
+    def has_python_dependency_error(error_output: str) -> bool:
+        # List of packages to check for in error messages
+        problem_packages = [
+            "libpython3.12-stdlib",
+            "libpython3.12-minimal",
+            "libpython3.12",
+            "libpython3.12-dev",
+            "python3.12",
+            "python3.12-dev",
+            "python3.12-venv"
+        ]
+
+        # Check if this is a dependency error
+        if "unmet dependencies" not in error_output:
+            return False
+
+        # Check if any of our problematic packages are mentioned
+        return any(pkg in error_output for pkg in problem_packages)
+
     def fix_python_dependencies(_animated_task: AnimatedTask) -> None:
         env = os.environ.copy()
         env["DEBIAN_FRONTEND"] = "noninteractive"
@@ -1555,16 +1574,20 @@ def manage_ansible_venv(force_recreate: bool = False) -> None:
                         "python3.12-distutils", "python3.12-venv", "-y"
                     ], env=env)
                 except subprocess.CalledProcessError as e:
-                    if "unmet dependencies" in e.output and "libpython3.12" in e.output:
-                        print_info("Detected Python package dependency conflict. Cleaning up packages...")
-                        fix_python_dependencies(_animated_task)
-                        # Try installation again after cleanup
-                        run_command([
-                            "apt-get", "install", "python3.12", "python3.12-dev",
-                            "python3.12-distutils", "python3.12-venv", "-y"
-                        ], env=env)
+                    if hasattr(e, 'output') and isinstance(e.output, (str, bytes)):
+                        error_output = e.output.decode('utf-8') if isinstance(e.output, bytes) else e.output
+                        if has_python_dependency_error(error_output):
+                            print_info("Detected Python package dependency conflict. Cleaning up packages...")
+                            fix_python_dependencies(_animated_task)
+                            # Try installation again after cleanup
+                            run_command([
+                                "apt-get", "install", "python3.12", "python3.12-dev",
+                                "python3.12-distutils", "python3.12-venv", "-y"
+                            ], env=env)
+                        else:
+                            raise  # Re-raise if it's a different error
                     else:
-                        raise  # Re-raise if it's a different error
+                        raise  # Re-raise if we can't check the error output
 
             run_task_with_animation("Installing Python 3.12 and dependencies", install_python)
 
