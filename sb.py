@@ -1491,12 +1491,54 @@ def manage_ansible_venv(force_recreate: bool = False) -> None:
     venv_python_path = f"{ansible_venv_path}/venv/bin/python3.12"
     python_missing = False
 
+    def check_python_dependency_conflict(_animated_task: AnimatedTask) -> bool:
+        try:
+            output = subprocess.check_output(
+                ["apt-get", "install", "-f"],
+                stderr=subprocess.STDOUT,
+                text=True
+            )
+            return "libpython3.12" in output and "unmet dependencies" in output
+        except subprocess.CalledProcessError as e:
+            return "libpython3.12" in e.output and "unmet dependencies" in e.output
+
+    def fix_python_dependencies(_animated_task: AnimatedTask) -> None:
+        env = os.environ.copy()
+        env["DEBIAN_FRONTEND"] = "noninteractive"
+        packages_to_remove = [
+            "libpython3.12-minimal",
+            "libpython3.12-stdlib",
+            "python3.12-minimal",
+            "libpython3.12",
+            "libpython3.12-dev",
+            "python3.12",
+            "python3.12-dev",
+            "python3.12-venv"
+        ]
+        run_command(["apt-get", "remove", "-y"] + packages_to_remove, env=env)
+        run_command(["apt-get", "autoremove", "-y"], env=env)
+        run_command(["apt-get", "clean"], env=env)
+
     def check_python_version(animated_task: AnimatedTask) -> bool:
         nonlocal python_missing
         if os.path.isdir(f"{ansible_venv_path}/venv/bin") and not os.path.isfile(venv_python_path):
             animated_task.set_warning()
             python_missing = True
         return python_missing
+
+    # Check for Python dependency conflicts first
+    has_conflict = run_task_with_animation(
+        "Checking Python package dependencies",
+        check_python_dependency_conflict
+    )
+
+    if has_conflict:
+        print_info("Detected Python package dependency conflict. Cleaning up packages...")
+        run_task_with_animation(
+            "Removing conflicting Python packages",
+            fix_python_dependencies
+        )
+        force_recreate = True  # Force recreation after cleaning up packages
 
     python_missing = run_task_with_animation("Checking Python version in venv", check_python_version)
 
