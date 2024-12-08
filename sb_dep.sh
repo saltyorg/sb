@@ -188,7 +188,7 @@ cd /srv/ansible || error "Failed to change directory to /srv/ansible"
 if [[ $release =~ (focal|jammy)$ ]]; then
     echo "${release^}, deploying venv with Python 3.12."
     run_cmd add-apt-repository ppa:deadsnakes/ppa --yes
-    run_cmd apt-get install python3.12 python3.12-dev python3.12-distutils python3.12-venv -y
+    run_cmd apt-get install python3.12 python3.12-dev python3.12-venv -y
     run_cmd python3.12 -m ensurepip
     run_cmd python3.12 -m venv venv
 

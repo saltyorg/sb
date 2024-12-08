@@ -1534,7 +1534,7 @@ def manage_ansible_venv(force_recreate: bool = False) -> None:
             def install_python(_animated_task: AnimatedTask) -> None:
                 run_command([
                     "apt-get", "install", "python3.12", "python3.12-dev",
-                    "python3.12-distutils", "python3.12-venv", "-y"
+                    "python3.12-venv", "-y"
                 ], env=env)
 
             run_task_with_animation("Installing Python 3.12 and dependencies", install_python)
