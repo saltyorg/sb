@@ -1641,9 +1641,17 @@ def handle_reinstall_python(_arguments):
     Args:
         _arguments: Unused arguments from the command line parser.
     """
-    print_info("Removing Python 3.12 packages and recreating Ansible venv.")
-    run_task_with_animation("Removing Python 3.12 packages", remove_python)
-    manage_ansible_venv(force_recreate=True)
+    def detect_os_release(_animated_task: AnimatedTask) -> str:
+        return subprocess.check_output(["lsb_release", "-cs"], text=True).strip()
+
+    release = run_task_with_animation("Detecting OS release", detect_os_release)
+
+    if release in ("focal", "jammy"):
+        print_info("Removing Python 3.12 packages and recreating Ansible venv.")
+        run_task_with_animation("Removing Python 3.12 packages", remove_python)
+        manage_ansible_venv(force_recreate=True)
+    else:
+        print_info("This command is only for Ubuntu 20.04 and 22.04")
 
 
 def create_parser():
