@@ -135,14 +135,14 @@ done
 release=$(lsb_release -cs 2>/dev/null | grep -v "No LSB modules are available.")
 
 # Add more releases like (focal|jammy)$
-if [[ $release =~ (focal|jammy)$ ]]; then
+if [[ $release =~ (jammy)$ ]]; then
     echo "${release^} is currently supported."
 elif [[ $release =~ (noble)$ ]]; then
     echo "${release^} is currently in testing."
 else
     echo "==== UNSUPPORTED OS ===="
     echo "Install cancelled: ${release^} is not supported."
-    echo "Supported OS: 20.04 (Focal), 22.04 (Jammy) and 24.04 (Nobel)"
+    echo "Supported OS: 22.04 (Jammy) and 24.04 (Nobel)"
     echo "==== UNSUPPORTED OS ===="
     exit 1
 fi

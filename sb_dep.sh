@@ -116,7 +116,7 @@ run_cmd run_cmd apt-get update
 release=$(lsb_release -cs) || error "Failed to determine Ubuntu release"
 
 ## Add apt repos
-if [[ $release =~ (focal|jammy)$ ]]; then
+if [[ $release =~ (jammy)$ ]]; then
     sources_file="/etc/apt/sources.list"
 
     run_cmd rm -rf /etc/apt/sources.list.d/*
@@ -185,7 +185,7 @@ echo "Locale set to en_US.UTF-8"
 
 cd /srv/ansible || error "Failed to change directory to /srv/ansible"
 
-if [[ $release =~ (focal|jammy)$ ]]; then
+if [[ $release =~ (jammy)$ ]]; then
     echo "${release^}, deploying venv with Python 3.12."
     run_cmd add-apt-repository ppa:deadsnakes/ppa --yes
     run_cmd apt-get install python3.12 python3.12-dev python3.12-venv -y
@@ -202,7 +202,7 @@ else
     error "Unsupported Distro, exiting."
 fi
 
-if [[ $release =~ (focal|jammy)$ ]]; then
+if [[ $release =~ (jammy)$ ]]; then
     install_pip
 fi
 

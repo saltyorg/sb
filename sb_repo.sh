@@ -114,7 +114,7 @@ release=$(lsb_release -cs 2>/dev/null | grep -v "No LSB modules are available.")
 shopt -s nullglob
 for i in "$SALTBOX_PATH"/defaults/*.default; do
     if [ ! -f "$SALTBOX_PATH/$(basename "${i%.*}")" ]; then
-        if [[ $release =~ (focal|jammy)$ ]]; then
+        if [[ $release =~ (jammy)$ ]]; then
             run_cmd cp -n "${i}" "$SALTBOX_PATH/$(basename "${i%.*}")"
         elif [[ $release =~ (noble)$ ]]; then
             run_cmd cp --update=none "${i}" "$SALTBOX_PATH/$(basename "${i%.*}")"
