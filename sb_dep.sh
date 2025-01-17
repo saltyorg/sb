@@ -148,6 +148,7 @@ run_cmd apt-get install -y \
     nano \
     git \
     curl \
+    wget \
     jq \
     file \
     gpg-agent \
