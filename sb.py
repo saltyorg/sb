@@ -1695,7 +1695,7 @@ def create_parser():
 
     # Reinstall-python command
     parser_reinstall_python = subparsers.add_parser('reinstall-python',
-                                                 help='Reintall Python 3.12 and recreate the Ansible venv')
+                                                 help='Reinstall Python 3.12 and recreate the Ansible venv')
     parser_reinstall_python.set_defaults(func=handle_reinstall_python)
 
     # Reinstall-facts command
