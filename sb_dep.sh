@@ -165,21 +165,27 @@ if ! locale -a | grep -q "^en_US.UTF-8"; then
     run_cmd locale-gen en_US.UTF-8
 fi
 
-# Update locale
-run_cmd update-locale LC_ALL=en_US.UTF-8
-run_cmd update-locale LANG=en_US.UTF-8
+# Update locale settings simultaneously
+run_cmd update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
 
 # Export the locale for the current script
 export LC_ALL=en_US.UTF-8
+export LANG=en_US.UTF-8
 
-# Check if the correct locale is active; if not, try reconfiguring locales
-if [ "$(locale | grep 'LC_ALL' | cut -d= -f2 | tr -d '"')" != "en_US.UTF-8" ]; then
-    echo "Locale en_US.UTF-8 is not set, trying to reconfigure locales..."
+# Check if both locale settings are correct
+current_lc_all=$(locale | grep 'LC_ALL' | cut -d= -f2 | tr -d '"')
+current_lang=$(locale | grep 'LANG' | cut -d= -f2 | tr -d '"')
+
+if [ "$current_lc_all" != "en_US.UTF-8" ] || [ "$current_lang" != "en_US.UTF-8" ]; then
+    echo "One or both locale settings are incorrect, trying to reconfigure locales..."
     run_cmd dpkg-reconfigure locales
 
-    # Check again if the correct locale is active
-    if [ "$(locale | grep 'LC_ALL' | cut -d= -f2 | tr -d '"')" != "en_US.UTF-8" ]; then
-        error "Locale en_US.UTF-8 still not set."
+    # Re-check after reconfiguration
+    current_lc_all=$(locale | grep 'LC_ALL' | cut -d= -f2 | tr -d '"')
+    current_lang=$(locale | grep 'LANG' | cut -d= -f2 | tr -d '"')
+    
+    if [ "$current_lc_all" != "en_US.UTF-8" ] || [ "$current_lang" != "en_US.UTF-8" ]; then
+        error "Locale settings still incorrect: LC_ALL=$current_lc_all, LANG=$current_lang"
     fi
 fi
 
