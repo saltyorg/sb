@@ -167,6 +167,7 @@ fi
 
 # Update locale
 run_cmd update-locale LC_ALL=en_US.UTF-8
+run_cmd update-locale LANG=en_US.UTF-8
 
 # Export the locale for the current script
 export LC_ALL=en_US.UTF-8
