@@ -1,5 +1,5 @@
 certifi==2025.1.31
-charset-normalizer==3.4.1
+charset-normalizer==3.4.2
 idna==3.10
 Nuitka==2.6.7
 ordered-set==4.1.0
