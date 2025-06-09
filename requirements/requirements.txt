@@ -5,6 +5,6 @@ Nuitka==2.6.7
 ordered-set==4.1.0
 python-magic==0.4.27
 PyYAML==6.0.2
-requests==2.32.3
+requests==2.32.4
 urllib3==2.3.0
 zstandard==0.23.0
