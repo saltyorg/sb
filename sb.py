@@ -1124,7 +1124,7 @@ def handle_inventory(_arguments):
     """
     file_path = "/srv/git/saltbox/inventories/host_vars/localhost.yml"
     default_editor = "nano"
-    approved_editors = ["nano", "vim", "vi", "emacs", "gedit", "code"]
+    approved_editors = ["nano", "vim", "vi", "emacs", "gedit", "code", "micro"]
 
     if not os.path.isfile(file_path):
         print("Error: The inventory file 'localhost.yml' does not yet exist.")
