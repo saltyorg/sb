@@ -109,7 +109,7 @@ fi
 export DEBIAN_FRONTEND=noninteractive
 
 ## Install Pre-Dependencies
-run_cmd run_cmd apt-get install -y software-properties-common apt-transport-https
+run_cmd run_cmd apt-get install -o DPkg::Lock::Timeout=60 -y software-properties-common apt-transport-https
 run_cmd run_cmd apt-get update
 
 # Check for supported Ubuntu Releases
