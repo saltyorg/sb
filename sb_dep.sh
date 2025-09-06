@@ -130,7 +130,7 @@ if [[ $release =~ (jammy)$ ]]; then
 elif [[ $release =~ (noble)$ ]]; then
     sources_file="/etc/apt/sources.list"
 
-    run_cmd rm -rf /etc/apt/sources.list.d/*
+    run_cmd find /etc/apt/sources.list.d/ -type f ! -name "ubuntu.sources" -delete
     add_repo "deb http://archive.ubuntu.com/ubuntu/ $(lsb_release -sc) main restricted universe multiverse" "$sources_file"
     add_repo "deb http://archive.ubuntu.com/ubuntu/ $(lsb_release -sc)-updates main restricted universe multiverse" "$sources_file"
     add_repo "deb http://archive.ubuntu.com/ubuntu/ $(lsb_release -sc)-backports main restricted universe multiverse" "$sources_file"
