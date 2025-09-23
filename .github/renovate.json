@@ -24,8 +24,7 @@
                 "pip_requirements"
             ],
             "matchFileNames": [
-                "requirements/*",
-                "requirements-saltbox.txt"
+                "requirements/*"
             ],
             "matchUpdateTypes": [
                 "major"
@@ -42,8 +41,7 @@
                 "pip_requirements"
             ],
             "matchFileNames": [
-                "requirements/*",
-                "requirements-saltbox.txt"
+                "requirements/*"
             ],
             "groupName": "requirements",
             "matchUpdateTypes": [
