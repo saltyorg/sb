@@ -1,10 +1,10 @@
-certifi==2025.1.31
-charset-normalizer==3.4.1
+certifi==2025.8.3
+charset-normalizer==3.4.3
 idna==3.10
-Nuitka==2.6.7
+Nuitka==2.7.16
 ordered-set==4.1.0
 python-magic==0.4.27
 PyYAML==6.0.2
-requests==2.32.3
-urllib3==2.3.0
-zstandard==0.23.0
+requests==2.32.5
+urllib3==2.5.0
+zstandard==0.25.0
