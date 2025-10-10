@@ -8,6 +8,9 @@
     ],
     "prConcurrentLimit": 0,
     "prHourlyLimit": 0,
+    "ignorePaths": [
+        "**/requirements-saltbox.txt"
+    ],
     "ansible": {
         "enabled": false
     },
