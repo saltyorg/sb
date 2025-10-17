@@ -15,13 +15,13 @@
 
 VERBOSE=false
 VERBOSE_OPT=""
-SB_REPO="https://github.com/saltyorg/sb.git"
+SB_REPO="https://github.com/r3dlobst3r/sb.git"
 SB_PATH="/srv/git/sb"
 RELEASE_FILE="/srv/git/sb/release.txt"
 TARGET_BINARY_PATH="/srv/git/sb/sb"
 SB_INSTALL_SCRIPT="$SB_PATH/sb_install.sh"
 SCRIPT_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
-BRANCH="master"
+BRANCH="arm_support"
 
 ################################
 # Functions
@@ -222,7 +222,7 @@ fi
 # Clone SB repo
 run_cmd mkdir -p /srv/git
 run_cmd mkdir -p /srv/ansible
-run_cmd git clone --branch master "${SB_REPO}" "$SB_PATH"
+run_cmd git clone --branch "${BRANCH}" "${SB_REPO}" "$SB_PATH"
 
 download_binary
 
