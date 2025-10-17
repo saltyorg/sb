@@ -22,7 +22,7 @@ jobs:
       matrix:
         include:
           - arch: amd64
-            runner: self-hosted
+            runner: ubuntu-24.04
             binary_name: sb
           - arch: arm64
             runner: ubuntu-24.04-arm
