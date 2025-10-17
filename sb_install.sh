@@ -94,7 +94,9 @@ download_binary() {
             ;;
     esac
 
-    download_url="https://github.com/saltyorg/sb/releases/download/$version/sb${binary_suffix}"
+    # Extract repo URL from SB_REPO variable (remove .git suffix)
+    repo_url="${SB_REPO%.git}"
+    download_url="${repo_url}/releases/download/$version/sb${binary_suffix}"
 
     temp_binary_path="${TARGET_BINARY_PATH}.tmp"
     run_cmd curl -L -o "${temp_binary_path}" "${download_url}"
