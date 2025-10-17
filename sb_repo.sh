@@ -128,7 +128,13 @@ cd "$SALTBOX_PATH" || exit
 run_cmd bash "$SALTBOX_PATH/bin/git/init-hooks"
 
 ## Download saltbox.fact file
-FACT_URL="https://github.com/saltyorg/ansible-facts/releases/latest/download/saltbox-facts"
+# Detect architecture for binary selection
+arch=$(uname -m)
+if [[ $arch == "aarch64" ]] || [[ $arch == "arm64" ]]; then
+    FACT_URL="https://github.com/r3dlobst3r/ansible-facts/releases/latest/download/saltbox-facts-arm64"
+else
+    FACT_URL="https://github.com/saltyorg/ansible-facts/releases/latest/download/saltbox-facts"
+fi
 FACT_PATH="$SALTBOX_PATH/ansible_facts.d/saltbox.fact"
 
 $VERBOSE && echo "Downloading the saltbox.fact file..."
