@@ -5,6 +5,72 @@ Updated the SB (Saltbox installer) repository to support ARM64 (aarch64) archite
 
 ## Changes Made
 
+### sb_dep.sh
+
+#### Architecture-Aware APT Repository Configuration
+
+**Purpose:** Ensure ARM64 systems use the correct Ubuntu package mirrors.
+
+**Location:** Lines ~116-149
+
+**Issue:** ARM64 systems require `ports.ubuntu.com` instead of `archive.ubuntu.com` for package repositories.
+
+**Solution:** Added architecture detection before configuring APT sources:
+
+```bash
+## Detect architecture for proper mirror selection
+arch=$(uname -m)
+if [[ $arch == "aarch64" ]] || [[ $arch == "arm64" ]]; then
+    ubuntu_mirror="http://ports.ubuntu.com/ubuntu-ports"
+else
+    ubuntu_mirror="http://archive.ubuntu.com/ubuntu"
+fi
+
+## Add apt repos
+if [[ $release =~ (jammy)$ ]]; then
+    sources_file="/etc/apt/sources.list"
+
+    run_cmd rm -rf /etc/apt/sources.list.d/*
+    add_repo "deb ${ubuntu_mirror}/ $(lsb_release -sc) main" "$sources_file"
+    add_repo "deb ${ubuntu_mirror}/ $(lsb_release -sc) universe" "$sources_file"
+    add_repo "deb ${ubuntu_mirror}/ $(lsb_release -sc) restricted" "$sources_file"
+    add_repo "deb ${ubuntu_mirror}/ $(lsb_release -sc) multiverse" "$sources_file"
+
+elif [[ $release =~ (noble)$ ]]; then
+    sources_file="/etc/apt/sources.list"
+
+    run_cmd find /etc/apt/sources.list.d/ -type f ! -name "ubuntu.sources" -delete
+    add_repo "deb ${ubuntu_mirror}/ $(lsb_release -sc) main restricted universe multiverse" "$sources_file"
+    add_repo "deb ${ubuntu_mirror}/ $(lsb_release -sc)-updates main restricted universe multiverse" "$sources_file"
+    add_repo "deb ${ubuntu_mirror}/ $(lsb_release -sc)-backports main restricted universe multiverse" "$sources_file"
+    add_repo "deb ${ubuntu_mirror} $(lsb_release -sc)-security main restricted universe multiverse" "$sources_file"
+fi
+```
+
+**Impact:**
+- **x86_64**: Uses `archive.ubuntu.com` (no change)
+- **ARM64**: Uses `ports.ubuntu.com` (fixes APT 404 errors)
+
+### sb_repo.sh
+
+#### Updated Repository URL
+
+**Location:** Line 18
+
+**Changed:** `SALTBOX_REPO` variable to point to testing fork
+
+**Before:**
+```bash
+SALTBOX_REPO="https://github.com/saltyorg/saltbox.git"
+```
+
+**After:**
+```bash
+SALTBOX_REPO="https://github.com/r3dlobst3r/saltbox.git"
+```
+
+**Note:** This should be reverted to `saltyorg/saltbox` before merging to production.
+
 ### sb_install.sh
 
 #### 1. Architecture Detection (Line ~150)
@@ -91,9 +157,44 @@ This change is part of the larger ARM64 support effort that includes:
 - **Users on ARM64**: Now able to install Saltbox using `sb-arm64` binary
 - **Installation flow**: Automatically detects architecture and downloads correct binary
 
+## Testing Results
+
+### Dependencies Installation (sb_dep.sh)
+✅ **Successfully tested on Oracle Cloud ARM64 VPS (Ubuntu 24.04 Noble)**
+- Architecture detection works correctly
+- APT repositories configured properly with `ports.ubuntu.com`
+- All Python dependencies installed successfully
+- Virtual environment created and configured
+
+### Repository Cloning (sb_repo.sh)  
+- Configuration updated to use r3dlobst3r fork during testing
+- Will need revert to saltyorg before production merge
+
+## Known Issues and Fixes
+
+### Issue 1: APT 404 Errors on ARM64
+**Problem:** Original code used `archive.ubuntu.com` for all architectures, causing 404 errors on ARM64:
+```
+E: Failed to fetch http://archive.ubuntu.com/ubuntu/dists/noble/main/binary-arm64/Packages  404  Not Found
+```
+
+**Root Cause:** Ubuntu ARM64 packages are hosted on `ports.ubuntu.com`, not `archive.ubuntu.com`.
+
+**Solution:** Added architecture detection in `sb_dep.sh` to select correct mirror.
+
+**Status:** ✅ Fixed and tested
+
+### Issue 2: Repository Branch Not Found
+**Problem:** `sb_repo.sh` tried to clone `arm_support` branch from `saltyorg/saltbox` which doesn't exist.
+
+**Solution:** Updated `SALTBOX_REPO` to point to `r3dlobst3r/saltbox` fork where the branch exists.
+
+**Status:** ✅ Fixed (temporary, needs revert before merge)
+
 ## Future Considerations
 
-1. **Build Pipeline**: CI/CD should be updated to build both x86_64 and ARM64 binaries
-2. **Release Process**: Both binaries should be included in each release
-3. **Testing**: Automated tests should validate both architectures
-4. **Documentation**: Update sb repository README to mention ARM64 support
+1. **Build Pipeline**: ✅ Updated - GitHub Actions now builds both architectures using matrix strategy
+2. **Release Process**: ✅ Completed - v1.4.2 includes both `sb` and `sb-arm64` binaries
+3. **Testing**: 🔄 In Progress - Validating complete installation flow on ARM64
+4. **Documentation**: ✅ ARM64_SUPPORT_SB.md created with comprehensive details
+5. **Production Merge**: ⏳ Pending - Need to revert fork references in sb_install.sh, sb_repo.sh before merge
