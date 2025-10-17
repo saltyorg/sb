@@ -54,6 +54,8 @@ download_binary() {
     local download_url
     local temp_binary_path
     local file_type
+    local arch
+    local binary_suffix
 
     if ! command -v file > /dev/null 2>&1; then
         run_cmd sudo apt-get update
@@ -77,7 +79,22 @@ download_binary() {
         exit 1
     fi
 
-    download_url="https://github.com/saltyorg/sb/releases/download/$version/sb"
+    # Determine architecture suffix for binary
+    arch=$(uname -m)
+    case "$arch" in
+        x86_64)
+            binary_suffix=""
+            ;;
+        aarch64)
+            binary_suffix="-arm64"
+            ;;
+        *)
+            echo "Error: Unsupported architecture: $arch" >&2
+            exit 1
+            ;;
+    esac
+
+    download_url="https://github.com/saltyorg/sb/releases/download/$version/sb${binary_suffix}"
 
     temp_binary_path="${TARGET_BINARY_PATH}.tmp"
     run_cmd curl -L -o "${temp_binary_path}" "${download_url}"
@@ -148,12 +165,12 @@ fi
 # Check if using valid arch
 arch=$(uname -m)
 
-if [[ $arch =~ (x86_64)$ ]]; then
+if [[ $arch =~ (x86_64|aarch64)$ ]]; then
     echo "$arch is currently supported."
 else
     echo "==== UNSUPPORTED CPU Architecture ===="
     echo "Install cancelled: $arch is not supported."
-    echo "Supported CPU Architecture(s): x86_64"
+    echo "Supported CPU Architecture(s): x86_64, aarch64"
     echo "==== UNSUPPORTED CPU Architecture ===="
     exit 1
 fi
