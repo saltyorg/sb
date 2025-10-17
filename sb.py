@@ -925,13 +925,20 @@ def check_and_update_repo(sb_repo_path):
             check=True
         )
 
-        # Get the current HEAD hash and the upstream master hash
+        # Get the current branch name
+        current_branch = subprocess.check_output(
+            ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
+            cwd=sb_repo_path,
+            text=True
+        ).strip()
+
+        # Get the current HEAD hash and the upstream hash for current branch
         head_hash = subprocess.check_output(
             ['git', 'rev-parse', 'HEAD'],
             cwd=sb_repo_path
         ).strip()
         upstream_hash = subprocess.check_output(
-            ['git', 'rev-parse', 'master@{upstream}'],
+            ['git', 'rev-parse', f'{current_branch}@{{upstream}}'],
             cwd=sb_repo_path
         ).strip()
 

@@ -71,6 +71,52 @@ SALTBOX_REPO="https://github.com/r3dlobst3r/saltbox.git"
 
 **Note:** This should be reverted to `saltyorg/saltbox` before merging to production.
 
+### sb.py
+
+#### Dynamic Branch Detection
+
+**Location:** Lines ~920-945
+
+**Issue:** Script was hardcoded to check `master@{upstream}` when verifying if sb repository needs updating, causing failures when on different branches like `arm_support`.
+
+**Before:**
+```python
+# Get the current HEAD hash and the upstream master hash
+head_hash = subprocess.check_output(
+    ['git', 'rev-parse', 'HEAD'],
+    cwd=sb_repo_path
+).strip()
+upstream_hash = subprocess.check_output(
+    ['git', 'rev-parse', 'master@{upstream}'],
+    cwd=sb_repo_path
+).strip()
+```
+
+**After:**
+```python
+# Get the current branch name
+current_branch = subprocess.check_output(
+    ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
+    cwd=sb_repo_path,
+    text=True
+).strip()
+
+# Get the current HEAD hash and the upstream hash for current branch
+head_hash = subprocess.check_output(
+    ['git', 'rev-parse', 'HEAD'],
+    cwd=sb_repo_path
+).strip()
+upstream_hash = subprocess.check_output(
+    ['git', 'rev-parse', f'{current_branch}@{{upstream}}'],
+    cwd=sb_repo_path
+).strip()
+```
+
+**Impact:**
+- Works with any branch (master, arm_support, etc.)
+- Dynamically detects current branch before checking upstream
+- Fixes "fatal: no such branch: 'master'" error when on non-master branches
+
 ### sb_install.sh
 
 #### 1. Architecture Detection (Line ~150)
@@ -190,6 +236,19 @@ E: Failed to fetch http://archive.ubuntu.com/ubuntu/dists/noble/main/binary-arm6
 **Solution:** Updated `SALTBOX_REPO` to point to `r3dlobst3r/saltbox` fork where the branch exists.
 
 **Status:** ✅ Fixed (temporary, needs revert before merge)
+
+### Issue 3: Hardcoded Master Branch Check
+**Problem:** `sb.py` was checking for `master@{upstream}` regardless of current branch, causing error:
+```
+fatal: no such branch: 'master'
+Error executing git command: Command '['git', 'rev-parse', 'master@{upstream}']' returned non-zero exit status 128.
+```
+
+**Root Cause:** The `check_and_update_repo()` function hardcoded the master branch name instead of detecting the current branch.
+
+**Solution:** Modified `sb.py` to dynamically detect the current branch name and check its upstream.
+
+**Status:** ✅ Fixed
 
 ## Future Considerations
 
