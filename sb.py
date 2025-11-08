@@ -804,61 +804,78 @@ def update_sb(sb_repo_path):
         print(f"Error: {sb_sh_path} does not exist or is not a file.")
         sys.exit(1)
 
-    # Hardcoded paths
-    release_file_path = os.path.join(sb_repo_path, 'release.txt')
-    target_binary_path = os.path.join(sb_repo_path, 'sb')
+    # Target binary path
+    target_binary_path = "/usr/local/bin/sb"
 
-    # Read the release.txt file to get the GitHub tag
-    if not os.path.isfile(release_file_path):
-        print(f"Error: {release_file_path} does not exist.")
+    # Fetch the latest release from sb-go repository
+    api_url = "https://api.github.com/repos/saltyorg/sb-go/releases/latest"
+
+    try:
+        response = requests.get(api_url)
+        response.raise_for_status()
+        latest_release = response.json()
+
+        # Extract the version tag
+        version = latest_release.get('tag_name')
+        if not version:
+            print("Error: Could not determine latest version from GitHub API.")
+            sys.exit(1)
+
+        print(f"Latest sb-go version: {version}")
+
+        # Find the appropriate asset for the current platform
+        # Currently sb-go only has sb_linux_amd64
+        asset_name = "sb_linux_amd64"
+
+        assets = latest_release.get('assets', [])
+        download_url = None
+
+        for asset in assets:
+            if asset.get('name') == asset_name:
+                download_url = asset.get('browser_download_url')
+                break
+
+        if not download_url:
+            print(f"Error: Could not find asset '{asset_name}' in release {version}.")
+            sys.exit(1)
+
+        print(f"Downloading {asset_name} from {download_url}")
+
+        # Download the binary file
+        response = requests.get(download_url)
+        response.raise_for_status()
+
+        # Save the downloaded binary to a temporary file
+        temp_binary_path = target_binary_path + '.tmp'
+        with open(temp_binary_path, 'wb') as temp_binary_file:
+            temp_binary_file.write(response.content)
+
+        # Check if the downloaded file is a binary
+        mime = magic.Magic(mime=True)
+        file_type = mime.from_file(temp_binary_path)
+        if not file_type.startswith('application/'):
+            print(f"Error: Downloaded file is not a binary. "
+                  f"Detected type: {file_type}")
+            os.remove(temp_binary_path)
+            sys.exit(1)
+
+        # Replace the old binary with the new one
+        if os.path.isfile(temp_binary_path):
+            os.replace(temp_binary_path, target_binary_path)
+            print(f"Updated binary at {target_binary_path} to version {version}.")
+
+            # Ensure the new binary is executable
+            os.chmod(target_binary_path, 0o755)
+            print(f"Permissions changed for {target_binary_path} to be executable.")
+        else:
+            print(f"Error: Failed to write the new binary to {temp_binary_path}.")
+            sys.exit(1)
+
+    except requests.RequestException as e:
+        print(f"Error downloading sb-go binary: {e}")
         sys.exit(1)
-
-    with open(release_file_path, 'r') as release_file:
-        github_tag = release_file.readline().strip()
-
-    # Extract the version number from the tag
-    if not github_tag.startswith('refs/tags/'):
-        print(f"Error: Invalid tag format in {release_file_path}.")
-        sys.exit(1)
-
-    version = github_tag[len('refs/tags/'):]
-    if not version:
-        print(f"Error: No version found in tag {github_tag}.")
-        sys.exit(1)
-
-    # Form the URL for the binary download
-    download_url = f"https://github.com/saltyorg/sb/releases/download/{version}/sb"
-
-    # Download the binary file
-    response = requests.get(download_url)
-    if response.status_code != 200:
-        print(f"Error: Failed to download the binary from {download_url}.")
-        sys.exit(1)
-
-    # Save the downloaded binary to a temporary file
-    temp_binary_path = target_binary_path + '.tmp'
-    with open(temp_binary_path, 'wb') as temp_binary_file:
-        temp_binary_file.write(response.content)
-
-    # Check if the downloaded file is a binary
-    mime = magic.Magic(mime=True)
-    file_type = mime.from_file(temp_binary_path)
-    if not file_type.startswith('application/'):
-        print(f"Error: Downloaded file is not a binary. "
-              f"Detected type: {file_type}")
-        os.remove(temp_binary_path)
-        sys.exit(1)
-
-    # Replace the old binary with the new one
-    if os.path.isfile(temp_binary_path):
-        os.replace(temp_binary_path, target_binary_path)
-        print(f"Updated binary at {target_binary_path}.")
-
-        # Ensure the new binary is executable
-        os.chmod(target_binary_path, 0o755)
-        print(f"Permissions changed for {target_binary_path} to be executable.")
-    else:
-        print(f"Error: Failed to write the new binary to {temp_binary_path}.")
+    except Exception as e:
+        print(f"Unexpected error updating sb-go binary: {e}")
         sys.exit(1)
 
 
