@@ -21,7 +21,7 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: Check-out repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup venv
         run: python3.12 -m venv venv
