@@ -1740,6 +1740,11 @@ def main():
     saltbox_user = get_saltbox_user()
     relaunch_as_root()
 
+    # Force update and migrate to /usr/local/bin/sb
+    update_sb(SB_REPO_PATH)
+    result = subprocess.run(['/usr/local/bin/sb'] + sys.argv[1:], check=True)
+    sys.exit(result.returncode)
+
     parser = create_parser()
     args = parser.parse_args()
 
