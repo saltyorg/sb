@@ -21,6 +21,7 @@ TARGET_BINARY_PATH="/usr/local/bin/sb"
 SB_INSTALL_SCRIPT="$SB_PATH/sb_install.sh"
 SCRIPT_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
 BRANCH="master"
+BRANCH_OPT=""
 
 ################################
 # Functions
@@ -99,6 +100,11 @@ while getopts 'vb:' f; do
   esac
 done
 
+# Build optional branch argument for sb setup
+if [ -n "$BRANCH" ]; then
+    BRANCH_OPT="-b $BRANCH"
+fi
+
 ################################
 # Main
 ################################
@@ -117,4 +123,4 @@ fi
 download_binary
 
 # Run sb setup
-run_cmd /usr/local/bin/sb setup $VERBOSE_OPT
+run_cmd /usr/local/bin/sb setup $VERBOSE_OPT $BRANCH_OPT
