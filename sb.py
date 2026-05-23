@@ -1547,7 +1547,25 @@ def manage_ansible_venv(force_recreate: bool = False) -> None:
 
             run_task_with_animation("Creating Python virtual environment", create_python_venv)
 
-        elif release == "noble":
+        elif release in ("noble", "resolute"):
+            if release == "resolute":
+                # Ubuntu 26.04 ships Python 3.14; python3.12 is not in Ubuntu's repos.
+                # Use deadsnakes PPA to install 3.12 (same approach as jammy).
+                def add_deadsnakes_resolute(_animated_task: AnimatedTask) -> None:
+                    run_command([
+                        "add-apt-repository", "ppa:deadsnakes/ppa", "--yes"
+                    ], env=env)
+
+                run_task_with_animation("Adding deadsnakes PPA for Python 3.12", add_deadsnakes_resolute)
+
+                def install_python_resolute(_animated_task: AnimatedTask) -> None:
+                    run_command([
+                        "apt-get", "install", "python3.12", "python3.12-dev",
+                        "python3.12-venv", "-y"
+                    ], env=env)
+
+                run_task_with_animation("Installing Python 3.12 (not default on 26.04)", install_python_resolute)
+
             def create_venv_dir(_animated_task: AnimatedTask) -> None:
                 os.makedirs(ansible_venv_path, exist_ok=True)
 
@@ -1741,23 +1759,3 @@ def main():
     relaunch_as_root()
 
     # Force update and migrate to /usr/local/bin/sb
-    update_sb(SB_REPO_PATH)
-    result = subprocess.run(['/usr/local/bin/sb'] + sys.argv[1:], check=True)
-    sys.exit(result.returncode)
-
-    parser = create_parser()
-    args = parser.parse_args()
-
-    if not args.no_update:
-        check_and_update_repo(SB_REPO_PATH)
-
-    if args.version:
-        handle_version()
-    elif hasattr(args, 'func'):
-        args.func(args)
-    else:
-        parser.print_help()
-
-
-if __name__ == "__main__":
-    main()

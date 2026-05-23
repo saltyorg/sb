@@ -116,7 +116,7 @@ for i in "$SALTBOX_PATH"/defaults/*.default; do
     if [ ! -f "$SALTBOX_PATH/$(basename "${i%.*}")" ]; then
         if [[ $release =~ (jammy)$ ]]; then
             run_cmd cp -n "${i}" "$SALTBOX_PATH/$(basename "${i%.*}")"
-        elif [[ $release =~ (noble)$ ]]; then
+        elif [[ $release =~ (noble|resolute)$ ]]; then
             run_cmd cp --update=none "${i}" "$SALTBOX_PATH/$(basename "${i%.*}")"
         fi
     fi

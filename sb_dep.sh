@@ -127,9 +127,10 @@ if [[ $release =~ (jammy)$ ]]; then
 
     run_cmd apt-get update
 
-elif [[ $release =~ (noble)$ ]]; then
+elif [[ $release =~ (noble|resolute)$ ]]; then
     sources_file="/etc/apt/sources.list"
 
+    # Preserve ubuntu.sources (DEB822 format) while adding fallback entries to sources.list
     run_cmd find /etc/apt/sources.list.d/ -type f ! -name "ubuntu.sources" -delete
     add_repo "deb http://archive.ubuntu.com/ubuntu/ $(lsb_release -sc) main restricted universe multiverse" "$sources_file"
     add_repo "deb http://archive.ubuntu.com/ubuntu/ $(lsb_release -sc)-updates main restricted universe multiverse" "$sources_file"
@@ -204,6 +205,15 @@ elif [[ $release =~ (noble)$ ]]; then
     echo "Noble, deploying venv with Python 3.12."
     # Cannot use pypa install method with Noble due to PEP 668
     run_cmd apt-get install -y python3-pip
+    run_cmd python3.12 -m venv venv
+
+elif [[ $release =~ (resolute)$ ]]; then
+    echo "Resolute, deploying venv with Python 3.12."
+    # Ubuntu 26.04 ships Python 3.14 as default; python3.12 is not in Ubuntu's repos.
+    # Use deadsnakes PPA to install 3.12 (same approach as jammy).
+    run_cmd add-apt-repository ppa:deadsnakes/ppa --yes
+    run_cmd apt-get install python3.12 python3.12-dev python3.12-venv -y
+    run_cmd python3.12 -m ensurepip
     run_cmd python3.12 -m venv venv
 
 else
